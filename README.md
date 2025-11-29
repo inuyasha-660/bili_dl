@@ -38,14 +38,16 @@
     {"Bvid": "BV14EUHB8EXr", "part": [0], "mode": 0, "qn": "80", "audio": "30280", "coding": "12"},
     {"Bvid": "BV1kt411z7ND", "part": [1, 2], "mode": 1, "qn": "74", "audio": "30280", "coding": "7"}
   ]
-
 ``````
-
+当仅下载音频时(mode = 2)， ``coding``对象将不会被匹配，但需要保留
 
 ## 从源码构建
 ### 依赖
 - [libcurl](https://curl.se/libcurl/)
 - [cJSON](https://github.com/DaveGamble/cJSON)
+- [C-Thread-Pool](https://github.com/Pithikos/C-Thread-Pool)
+
+``thpool.c``,``thpool.h``下载自``https://github.com/Pithikos/C-Thread-Pool``
 
 ### Meson
 ``````sh
