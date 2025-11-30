@@ -1,0 +1,11 @@
+{
+  "SESSDATA": "***",
+  "MaxThread": 4,
+  "Type": 1,
+  "Output": "./video1",
+  "Require": [
+    {"Bvid": "BV1794y1t7nw", "part": [0], "mode": 2, "qn": "80", "audio": "30280", "coding": "12"},
+    {"Bvid": "BV1kt411z7ND", "part": [1, 2], "mode": 1, "qn": "64", "audio": "30280", "coding": "7"},
+    {"Bvid": "BV11f4y1K7F7", "part": [0], "mode": 0, "qn": "80", "audio": "30280", "coding": "12"}
+  ]
+}

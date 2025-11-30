@@ -58,13 +58,40 @@ size_t api_curl_finish(void *buffer, size_t size, size_t nmemb, void *userp)
     return len_buffer;
 }
 
-// index: account->video 引索 i: part 引索
+int api_dl_file(char *url, char *filename)
+{
+    CURL *curl = curl_easy_init();
+    FILE *file = fopen(filename, "wb");
+    if (file == NULL) {
+        fprintf(stderr, "Error: Failed to open %s\n", filename);
+    }
+    flockfile(file);
+    curl_easy_setopt(curl, CURLOPT_REFERER, _REFERER);
+    curl_easy_setopt(curl, CURLOPT_USERAGENT, _USERAGENT);
+    pthread_mutex_lock(&lock_gl);
+    curl_easy_setopt(curl, CURLOPT_COOKIE, account->cookie);
+    pthread_mutex_unlock(&lock_gl);
+    curl_easy_setopt(curl, CURLOPT_URL, url);
+    curl_easy_setopt(curl, CURLOPT_WRITEDATA, file);
+
+    printf("Get: %s\n", url);
+    int err_dl = curl_easy_perform(curl);
+    if (err_dl != CURLE_OK) {
+        fprintf(stderr, "Error: %s\n", curl_easy_strerror(err_dl));
+    }
+    funlockfile(file);
+
+    fclose(file);
+    curl_easy_cleanup(curl);
+    return err_dl;
+}
+
+// index: account->video 引索; i: part 引索
 int api_dl_video_get_file(Buffer *buffer, int index, int i, struct Part *part)
 {
     int err_parse = 0;
     char *url_video = NULL;
     char *url_audio = NULL;
-    CURL *curl = curl_easy_init();
     cJSON *root = cJSON_Parse(buffer->buffer);
     if (root == NULL) {
         err_parse = 1;
@@ -177,12 +204,8 @@ int api_dl_video_get_file(Buffer *buffer, int index, int i, struct Part *part)
         goto end;
     }
 
-    curl_easy_setopt(curl, CURLOPT_REFERER, _REFERER);
-    curl_easy_setopt(curl, CURLOPT_USERAGENT, _USERAGENT);
-
     pthread_mutex_lock(&lock_gl);
     int mode = account->video->mode[index];
-    curl_easy_setopt(curl, CURLOPT_COOKIE, account->cookie);
 
     if (!is_dir_exist(account->Outoput)) {
         int err_mk = mkdir(account->Outoput, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
@@ -204,47 +227,30 @@ int api_dl_video_get_file(Buffer *buffer, int index, int i, struct Part *part)
     pthread_mutex_unlock(&lock_gl);
 
     switch (mode) {
-    case 0: {
-
+    case 0: { // TODO: 实现音视频合并
+        api_dl_file(url_video, filename_video);
+        api_dl_file(url_audio, filename_audio);
+        free(filename_audio);
+        free(filename_video);
         goto end;
     }
     case 1: {
-        FILE *video_f = fopen(filename_video, "wb");
-        if (video_f == NULL) {
-            fprintf(stderr, "Error: Failed to open %s\n", filename_video);
-        }
-        curl_easy_setopt(curl, CURLOPT_URL, url_video);
-        curl_easy_setopt(curl, CURLOPT_WRITEDATA, video_f);
-
-        printf("Get: %s\n", url_video);
-        int err_dl = curl_easy_perform(curl);
-        if (err_dl != CURLE_OK) {
-            fprintf(stderr, "Error: %s\n", curl_easy_strerror(err_dl));
-        }
-
-        fclose(video_f);
+        api_dl_file(url_video, filename_video);
+        free(filename_audio);
+        free(filename_video);
         goto end;
     }
     case 2: {
-        FILE *audio_f = fopen(filename_audio, "wb");
-        if (audio_f == NULL) {
-            fprintf(stderr, "Error: Failed to open %s\n", filename_audio);
-        }
-        curl_easy_setopt(curl, CURLOPT_URL, url_audio);
-        curl_easy_setopt(curl, CURLOPT_WRITEDATA, audio_f);
-
-        printf("Get: %s\n", url_audio);
-        int err_dl = curl_easy_perform(curl);
-        if (err_dl != CURLE_OK) {
-            fprintf(stderr, "Error: %s\n", curl_easy_strerror(err_dl));
-        }
-
-        fclose(audio_f);
+        api_dl_file(url_audio, filename_audio);
+        free(filename_audio);
+        free(filename_video);
         goto end;
     }
     default: {
         fprintf(stderr, "Error: Invalid value of mode\n");
 
+        free(filename_audio);
+        free(filename_video);
         err_parse = 1;
         goto end;
     }
@@ -256,7 +262,6 @@ end:
     if (url_video != NULL)
         free(url_video);
     cJSON_Delete(root);
-    curl_easy_cleanup(curl);
     return err_parse;
 }
 
