@@ -58,6 +58,15 @@ size_t api_curl_finish(void *buffer, size_t size, size_t nmemb, void *userp)
     return len_buffer;
 }
 
+void progress_print(int index)
+{
+    static int completed = 0;
+    completed += 1;
+    pthread_mutex_lock(&lock_gl);
+    printf("\033[32mCompleted(index: %d)\033[0m::[%d/%d]\n", index, completed, account->video->count);
+    pthread_mutex_unlock(&lock_gl);
+}
+
 int api_dl_file(char *url, char *filename)
 {
     CURL *curl = curl_easy_init();
@@ -98,6 +107,18 @@ int api_dl_video_get_file(Buffer *buffer, int index, int i, struct Part *part)
         fprintf(stderr, "Error: Failed to parse stream json\n");
         goto end;
     }
+    cJSON *code = cJSON_GetObjectItemCaseSensitive(root, "code");
+    if (code == NULL || !cJSON_IsNumber(code)) {
+        err_parse = 1;
+        fprintf(stderr, "Error: Failed to parse code\n");
+        goto end;
+    }
+    if (code->valueint != 0) {
+        err_parse = 1;
+        fprintf(stderr, "Error: Request error: %d\n", code->valueint);
+        goto end;
+    }
+
     cJSON *data = cJSON_GetObjectItemCaseSensitive(root, "data");
     if (data == NULL) {
         err_parse = 1;
@@ -123,6 +144,12 @@ int api_dl_video_get_file(Buffer *buffer, int index, int i, struct Part *part)
         goto end;
     }
 
+    pthread_mutex_lock(&lock_gl);
+    char *qn_t = strdup(account->video->qn[index]);
+    char *coding_t = strdup(account->video->coding[index]);
+    char *audio_t = strdup(account->video->audio[index]);
+    pthread_mutex_unlock(&lock_gl);
+
     cJSON *video;
     cJSON_ArrayForEach(video, Videos)
     {
@@ -135,31 +162,43 @@ int api_dl_video_get_file(Buffer *buffer, int index, int i, struct Part *part)
         char *id_str = int_to_str(id->valueint);
         cJSON *coding = cJSON_GetObjectItemCaseSensitive(video, "codecid");
         char *coding_str = int_to_str(coding->valueint);
-        pthread_mutex_lock(&lock_gl);
-        if (id_str == NULL || strcmp(id_str, account->video->qn[index])) {
+        // 若为 "*" 则直接使用最大值
+        if (id_str != NULL && !strcmp("*", qn_t)) {
             free(id_str);
-            pthread_mutex_unlock(&lock_gl);
+            goto getCoding;
+        }
+        if (id_str == NULL || strcmp(id_str, qn_t)) {
+            free(id_str);
             continue;
         }
-        if (coding == NULL || strcmp(coding_str, account->video->coding[index])) {
-            free(id_str);
-            free(coding_str);
-            pthread_mutex_unlock(&lock_gl);
-            continue;
-        }
-        pthread_mutex_unlock(&lock_gl);
+        free(id_str);
 
+    getCoding:
+        if (coding_str != NULL && !strcmp("*", coding_t)) {
+            free(coding_str);
+            goto getbaseUrl;
+        }
+        if (coding == NULL || strcmp(coding_str, coding_t)) {
+            free(coding_str);
+            continue;
+        }
+        free(coding_str);
+
+    getbaseUrl: {
         cJSON *baseUrl = cJSON_GetObjectItemCaseSensitive(video, "baseUrl");
         if (baseUrl == NULL || !cJSON_IsString(baseUrl)) {
             fprintf(stderr, "Error: baseUrl(video) is NULL\n");
             err_parse = 2;
-            free(id_str);
+            free(qn_t);
+            free(coding_t);
             goto end;
         }
         url_video = strdup(baseUrl->valuestring);
-        free(id_str);
-        free(coding_str);
     }
+    }
+    free(qn_t);
+    free(coding_t);
+
     if (url_video == NULL) {
         pthread_mutex_lock(&lock_gl);
         fprintf(stderr, "Error: Invalid qn&coding: %s&%s\n", account->video->qn[index],
@@ -178,23 +217,26 @@ int api_dl_video_get_file(Buffer *buffer, int index, int i, struct Part *part)
             goto end;
         }
         char *id_str = int_to_str(id->valueint);
-        pthread_mutex_lock(&lock_gl);
-        if (id_str == NULL || strcmp(id_str, account->video->audio[index])) {
+        if (id_str != NULL && !strcmp("*", audio_t)) {
             free(id_str);
-            pthread_mutex_unlock(&lock_gl);
+            goto getbaseUrl_audio;
+        }
+        if (id_str == NULL || strcmp(id_str, audio_t)) {
+            free(id_str);
             continue;
         }
-        pthread_mutex_unlock(&lock_gl);
+        free(id_str);
+
+    getbaseUrl_audio: {
 
         cJSON *baseUrl = cJSON_GetObjectItemCaseSensitive(audio, "baseUrl");
         if (baseUrl == NULL || !cJSON_IsString(baseUrl)) {
             fprintf(stderr, "Error: baseUrl(audio) is NULL\n");
             err_parse = 3;
-            free(id_str);
             goto end;
         }
         url_audio = strdup(baseUrl->valuestring);
-        free(id_str);
+    }
     }
     if (url_audio == NULL) {
         pthread_mutex_lock(&lock_gl);
@@ -275,11 +317,12 @@ int api_dl_video_get_stream_url(struct Part *part, int index)
             pthread_mutex_unlock(&lock_gl);
             continue;
         }
-        size_t len = snprintf(NULL, 0, "%s?bvid=%s&cid=%s&qn=%s&fnval=16&fourk=1", API_VIDEO_STREAM,
-                              account->video->Bvid[index], part->cid[i], account->video->qn[index]);
+
+        size_t len = snprintf(NULL, 0, "%s?bvid=%s&cid=%s&fnval=16&fourk=1", API_VIDEO_STREAM,
+                              account->video->Bvid[index], part->cid[i]);
         char *url = (char *)malloc((len + 1) * sizeof(char));
-        snprintf(url, len + 1, "%s?bvid=%s&cid=%s&qn=%s&fnval=16&fourk=1", API_VIDEO_STREAM,
-                 account->video->Bvid[index], part->cid[i], account->video->qn[index]);
+        snprintf(url, len + 1, "%s?bvid=%s&cid=%s&fnval=16&fourk=1", API_VIDEO_STREAM,
+                 account->video->Bvid[index], part->cid[i]);
         curl_easy_setopt(curl, CURLOPT_COOKIE, account->cookie);
         pthread_mutex_unlock(&lock_gl);
 
@@ -328,14 +371,17 @@ int api_dl_video_get_stream_url(struct Part *part, int index)
 
 int api_dl_video_get_cid(char *buffer, struct Part *ret)
 {
+    int err_get = 0;
     cJSON *root = cJSON_Parse(buffer);
     if (root == NULL) {
         fprintf(stderr, "Error: Failed to parse json::cid\n");
+        err_get = -1;
         goto end;
     }
     cJSON *data = cJSON_GetObjectItemCaseSensitive(root, "data");
     if (data == NULL) {
         fprintf(stderr, "Error: Failed to get data from cid::data\n");
+        err_get = -1;
         goto end;
     }
     cJSON *parts;
@@ -345,22 +391,26 @@ int api_dl_video_get_cid(char *buffer, struct Part *ret)
         cJSON *cid = cJSON_GetObjectItemCaseSensitive(parts, "cid");
         if (cid == NULL || !cJSON_IsNumber(cid)) {
             fprintf(stderr, "Error: Failed to read cid from data::cid\n");
+            err_get = -1;
             goto end;
         }
         cJSON *part = cJSON_GetObjectItemCaseSensitive(parts, "part");
         if (part == NULL || !cJSON_IsString(part)) {
             fprintf(stderr, "Error: Failed to read part from data::part\n");
+            err_get = -1;
             goto end;
         }
 
         ret->cid = (char **)realloc(ret->cid, (index + 1) * sizeof(char *));
         if (ret->cid == NULL) {
             fprintf(stderr, "Error: Failed to realloc cid array\n");
+            err_get = -1;
             goto end;
         }
         ret->part = (char **)realloc(ret->part, (index + 1) * sizeof(char *));
         if (ret->part == NULL) {
             fprintf(stderr, "Error: Failed to realloc part array\n");
+            err_get = -1;
             goto end;
         }
 
@@ -373,7 +423,7 @@ int api_dl_video_get_cid(char *buffer, struct Part *ret)
 
 end:
     cJSON_Delete(root);
-    return 0;
+    return err_get;
 }
 
 void api_dl_video(void *index_p)
@@ -417,9 +467,9 @@ void api_dl_video(void *index_p)
         }
 
         // 获取 Cid
-        api_dl_video_get_cid(buffer_cid->buffer, part);
-        if (part == NULL) {
-            fprintf(stderr, "Error: part is NULL\n");
+        int err_get = api_dl_video_get_cid(buffer_cid->buffer, part);
+        if (part == NULL || err_cid != 0) {
+            fprintf(stderr, "Error(%d): part is NULL\n", err_get);
             goto end;
         }
 
@@ -430,9 +480,7 @@ void api_dl_video(void *index_p)
             goto end;
         }
 
-        pthread_mutex_lock(&lock_gl);
-        printf("\033[32mCompleted\033[0m::[%d/%d]\n", index + 1, account->video->count);
-        pthread_mutex_unlock(&lock_gl);
+        progress_print(index);
 
     end:
         free(buffer_cid->buffer);

@@ -6,7 +6,7 @@
 #include <string.h>
 #include <wchar.h>
 
-#define VERSION "0.1.0"
+#define VERSION "0.1.1"
 
 struct Account *account;
 
