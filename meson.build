@@ -4,8 +4,8 @@ deps = [dependency('libcjson'), dependency('libcurl')]
 src = files(
   'main.c',
   'config.c',
-  'api.c',
-  'thpool.c'
+  'api/video.c',
+  'libs/thpool.c'
   )
 
 executable('bili_dl', src, dependencies: deps)
