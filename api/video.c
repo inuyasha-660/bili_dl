@@ -162,7 +162,7 @@ int api_dl_video_get_file(Buffer *buffer, int index, int i, struct Part *part)
         char *id_str = int_to_str(id->valueint);
         cJSON *coding = cJSON_GetObjectItemCaseSensitive(video, "codecid");
         char *coding_str = int_to_str(coding->valueint);
-        // 若为 "*" 则直接使用最大值
+        // 若为 "*" 则直接判断 coding
         if (id_str != NULL && !strcmp("*", qn_t)) {
             free(id_str);
             goto getCoding;
@@ -194,6 +194,7 @@ int api_dl_video_get_file(Buffer *buffer, int index, int i, struct Part *part)
             goto end;
         }
         url_video = strdup(baseUrl->valuestring);
+        break;
     }
     }
     free(qn_t);
@@ -233,11 +234,15 @@ int api_dl_video_get_file(Buffer *buffer, int index, int i, struct Part *part)
         if (baseUrl == NULL || !cJSON_IsString(baseUrl)) {
             fprintf(stderr, "Error: baseUrl(audio) is NULL\n");
             err_parse = 3;
+            free(audio_t);
             goto end;
         }
         url_audio = strdup(baseUrl->valuestring);
+        break;
     }
     }
+    free(audio_t);
+
     if (url_audio == NULL) {
         pthread_mutex_lock(&lock_gl);
         fprintf(stderr, "Error: Invalid audio&coding: %s&%s\n", account->video->qn[index],
@@ -248,6 +253,8 @@ int api_dl_video_get_file(Buffer *buffer, int index, int i, struct Part *part)
 
     pthread_mutex_lock(&lock_gl);
     int mode = account->video->mode[index];
+    char *outdir = strdup(account->Outoput);
+    char *outname = strdup(part->part[i]);
 
     if (!is_dir_exist(account->Outoput)) {
         int err_mk = mkdir(account->Outoput, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
@@ -259,33 +266,50 @@ int api_dl_video_get_file(Buffer *buffer, int index, int i, struct Part *part)
         }
     }
     // 创建视频文件
-    size_t len_video = snprintf(NULL, 0, "%s/%s-video.m4s", account->Outoput, part->part[i]);
+    size_t len_video = snprintf(NULL, 0, "%s/%s-video.m4s", outdir, outname);
     char *filename_video = (char *)malloc((len_video + 1) * sizeof(char));
-    snprintf(filename_video, len_video + 1, "%s/%s-video.m4s", account->Outoput, part->part[i]);
+    snprintf(filename_video, len_video + 1, "%s/%s-video.m4s", outdir, outname);
     // 创建音频文件
-    size_t len_audio = snprintf(NULL, 0, "%s/%s-audio.m4s", account->Outoput, part->part[i]);
+    size_t len_audio = snprintf(NULL, 0, "%s/%s-audio.m4s", outdir, outname);
     char *filename_audio = (char *)malloc((len_audio + 1) * sizeof(char));
-    snprintf(filename_audio, len_audio + 1, "%s/%s-audio.m4s", account->Outoput, part->part[i]);
+    snprintf(filename_audio, len_audio + 1, "%s/%s-audio.m4s", outdir, outname);
     pthread_mutex_unlock(&lock_gl);
 
     switch (mode) {
     case 0: { // TODO: 实现音视频合并
         api_dl_file(url_video, filename_video);
         api_dl_file(url_audio, filename_audio);
+        api_video_merge(filename_video, filename_audio, outdir, outname);
+
+        if (remove(filename_audio) != 0) {
+            fprintf(stderr, "Error: Failed to remove %s\n", filename_audio);
+        }
+        if (remove(filename_video) != 0) {
+            fprintf(stderr, "Error: Failed to remove %s\n", filename_video);
+        }
+
+        free(outdir);
+        free(outname);
         free(filename_audio);
         free(filename_video);
         goto end;
     }
     case 1: {
         api_dl_file(url_video, filename_video);
+
         free(filename_audio);
         free(filename_video);
+        free(outdir);
+        free(outname);
         goto end;
     }
     case 2: {
         api_dl_file(url_audio, filename_audio);
+
         free(filename_audio);
         free(filename_video);
+        free(outdir);
+        free(outname);
         goto end;
     }
     default: {
@@ -293,6 +317,8 @@ int api_dl_video_get_file(Buffer *buffer, int index, int i, struct Part *part)
 
         free(filename_audio);
         free(filename_video);
+        free(outdir);
+        free(outname);
         err_parse = 1;
         goto end;
     }

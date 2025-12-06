@@ -33,6 +33,8 @@
 - ``audio``: 目标音频质量(**"*"**: 使用默认值)
 - ``coding``: 目标编码((**"*"**: 使用默认值))
 
+各参数值的意义可以参考 [视频流URL(BAC Document)](https://socialsisteryi.github.io/bilibili-API-collect/docs/video/videostream_url.html)
+
 ``````json
 "Require": [
     {"Bvid": "BV14EUHB8EXr", "part": [0], "mode": 0, "qn": "80", "audio": "30280", "coding": "12"},
@@ -58,3 +60,5 @@ cd build
 meson compile
 ``````
 生成可执行文件 ``bili_dl``
+
+所用API来自 [bilibili-API-collect](https://github.com/SocialSisterYi/bilibili-API-collect)
