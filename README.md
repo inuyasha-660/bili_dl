@@ -47,11 +47,10 @@
 
 ## 从源码构建
 ### 依赖
-- [libcurl](https://curl.se/libcurl/)
-- [cJSON](https://github.com/DaveGamble/cJSON)
-- [C-Thread-Pool](https://github.com/Pithikos/C-Thread-Pool)
-
-``thpool.c``,``thpool.h``来自 [C-Thread-Pool](https://github.com/Pithikos/C-Thread-Pool)  **MIT license**
+- [libcurl](https://curl.se/libcurl/) [Curl LICENSE](https://curl.se/docs/copyright.html)
+- [cJSON](https://github.com/DaveGamble/cJSON) [MIT license](https://github.com/DaveGamble/cJSON/blob/master/LICENSE)
+- [C-Thread-Pool](https://github.com/Pithikos/C-Thread-Pool) [MIT license](https://github.com/Pithikos/C-Thread-Pool/blob/master/LICENSE)
+- [ffmpeg](https://www.ffmpeg.org) [LICENSE](https://www.ffmpeg.org/legal.html)
 
 ### Meson
 ``````sh
@@ -62,3 +61,6 @@ meson compile
 生成可执行文件 ``bili_dl``
 
 所用API来自 [bilibili-API-collect](https://github.com/SocialSisterYi/bilibili-API-collect)
+
+## 许可证
+GPL-3.0 License， 详细信息 [LICENSE](./LICENSE)
