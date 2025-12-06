@@ -6,7 +6,7 @@
 #include <string.h>
 #include <wchar.h>
 
-#define VERSION "0.1.1"
+#define VERSION "0.1.2"
 
 struct Account *account;
 
@@ -18,7 +18,7 @@ int init()
     account->cookie = NULL;
     account->MaxThread = 1;
     account->Type = 0;
-    account->Outoput = NULL;
+    account->Output = NULL;
     account->video = NULL;
 
     int curl_err = curl_global_init(CURL_GLOBAL_DEFAULT);
@@ -50,7 +50,7 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    printf("\nIN: %s OUT: %s\n", argv[1], account->Outoput);
+    printf("\nIN: %s OUT: %s\n", argv[1], account->Output);
     printf("Start performing(Y/n): ");
     char confirm = fgetwc(stdin);
     if (confirm != 'y' && confirm != 'Y') {

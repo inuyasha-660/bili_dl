@@ -6,7 +6,7 @@ struct Account {
     char *cookie; // 格式化完成的 SESSDATA
     int MaxThread;
     int Type; // 0: 初始化 1: 视频下载
-    char *Outoput;
+    char *Output;
     struct Video *video;
 };
 

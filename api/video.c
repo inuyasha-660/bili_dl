@@ -253,11 +253,11 @@ int api_dl_video_get_file(Buffer *buffer, int index, int i, struct Part *part)
 
     pthread_mutex_lock(&lock_gl);
     int mode = account->video->mode[index];
-    char *outdir = strdup(account->Outoput);
+    char *outdir = strdup(account->Output);
     char *outname = strdup(part->part[i]);
 
-    if (!is_dir_exist(account->Outoput)) {
-        int err_mk = mkdir(account->Outoput, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+    if (!is_dir_exist(account->Output)) {
+        int err_mk = mkdir(account->Output, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
         if (err_mk != 0) {
             fprintf(stderr, "Error: %s\n", strerror(errno));
             err_parse = err_mk;

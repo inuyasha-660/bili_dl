@@ -169,7 +169,7 @@ int cfg_read()
     account->SESSDATA = strdup(SESSDATA->valuestring);
     account->MaxThread = MaxThread->valueint;
     account->Type = Type->valueint;
-    account->Outoput = strdup(Output->valuestring);
+    account->Output = strdup(Output->valuestring);
     // 生成 cookie
     size_t len = snprintf(NULL, 0, "SESSDATA=%s", SESSDATA->valuestring);
     char *cookie = (char *)malloc((len + 1) * sizeof(char));
