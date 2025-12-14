@@ -1,6 +1,11 @@
 # BILI_DL
 基于配置的轻量化 BiliBili 视频下载器
 
+## 功能
+- [x] 视频/音频下载(Bvid)
+- [ ] 收藏夹下载
+- [ ] 合集下载
+
 ## 用法
 ``bili_dl <CONFIG>``
 
@@ -47,10 +52,10 @@
 
 ## 从源码构建
 ### 依赖
-- [libcurl](https://curl.se/libcurl/) [Curl LICENSE](https://curl.se/docs/copyright.html)
-- [cJSON](https://github.com/DaveGamble/cJSON) [MIT license](https://github.com/DaveGamble/cJSON/blob/master/LICENSE)
-- [C-Thread-Pool](https://github.com/Pithikos/C-Thread-Pool) [MIT license](https://github.com/Pithikos/C-Thread-Pool/blob/master/LICENSE)
-- [ffmpeg](https://www.ffmpeg.org) [LICENSE](https://www.ffmpeg.org/legal.html)
+- [libcurl](https://curl.se/libcurl/) ([Curl LICENSE](https://curl.se/docs/copyright.html))
+- [cJSON](https://github.com/DaveGamble/cJSON) ([MIT license](https://github.com/DaveGamble/cJSON/blob/master/LICENSE))
+- [C-Thread-Pool](https://github.com/Pithikos/C-Thread-Pool) ([MIT license](https://github.com/Pithikos/C-Thread-Pool/blob/master/LICENSE))
+- [ffmpeg](https://www.ffmpeg.org)(libavcodec, libavformat) ([LICENSE](https://www.ffmpeg.org/legal.html))
 
 ### Meson
 ``````sh
