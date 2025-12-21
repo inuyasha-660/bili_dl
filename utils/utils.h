@@ -25,3 +25,9 @@ struct Part {
     char **cid;
     char **part;
 };
+
+struct Wbi {
+    char *img_key;
+    char *sub_key;
+    char mixin_key[33];
+};

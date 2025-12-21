@@ -7,7 +7,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-int api_video_merge(char *filename_video, char *filename_audio, char *outdir, char *outname)
+int api_video_merge(char *filename_video, char *filename_audio, char *outdir,
+                    char *outname)
 {
     fprintf(stderr, "INFO: Merging video and audio\n");
 
@@ -30,11 +31,13 @@ int api_video_merge(char *filename_video, char *filename_audio, char *outdir, ch
     avformat_alloc_output_context2(&out_ctx, NULL, "mp4", out_path);
 
     // 打开媒体文件
-    if (avformat_open_input(&a_pFormatContext, filename_audio, NULL, NULL) != 0) {
+    if (avformat_open_input(&a_pFormatContext, filename_audio, NULL, NULL) !=
+        0) {
         fprintf(stderr, "Error: Failed to open %s\n", filename_audio);
         return -1;
     }
-    if (avformat_open_input(&v_pFormatContext, filename_video, NULL, NULL) != 0) {
+    if (avformat_open_input(&v_pFormatContext, filename_video, NULL, NULL) !=
+        0) {
         fprintf(stderr, "Error: Failed to open %s\n", filename_video);
         return -1;
     }
@@ -51,11 +54,13 @@ int api_video_merge(char *filename_video, char *filename_audio, char *outdir, ch
 
     // 创建输出流
     AVStream *out_v_stream = avformat_new_stream(out_ctx, NULL);
-    avcodec_parameters_copy(out_v_stream->codecpar, v_pFormatContext->streams[0]->codecpar);
+    avcodec_parameters_copy(out_v_stream->codecpar,
+                            v_pFormatContext->streams[0]->codecpar);
     out_v_stream->codecpar->codec_tag = 0;
 
     AVStream *out_a_stream = avformat_new_stream(out_ctx, NULL);
-    avcodec_parameters_copy(out_a_stream->codecpar, a_pFormatContext->streams[0]->codecpar);
+    avcodec_parameters_copy(out_a_stream->codecpar,
+                            a_pFormatContext->streams[0]->codecpar);
     out_a_stream->codecpar->codec_tag = 0;
 
     avio_open(&out_ctx->pb, out_path, AVIO_FLAG_WRITE);
@@ -71,8 +76,9 @@ int api_video_merge(char *filename_video, char *filename_audio, char *outdir, ch
     while (ret_v >= 0 || ret_a >= 0) {
         int write_next = 0;
         if (ret_v >= 0 && ret_a >= 0) {
-            long cmp = av_compare_ts(pkt_v->pts, v_pFormatContext->streams[0]->time_base, pkt_a->pts,
-                                     a_pFormatContext->streams[0]->time_base);
+            long cmp = av_compare_ts(
+                pkt_v->pts, v_pFormatContext->streams[0]->time_base, pkt_a->pts,
+                a_pFormatContext->streams[0]->time_base);
             write_next = (cmp <= 0); // 视频早或相等，优先写视频
         } else if (ret_v >= 0) {
             write_next = 1; // 视频
@@ -99,7 +105,8 @@ int api_video_merge(char *filename_video, char *filename_audio, char *outdir, ch
             ret_read = &ret_a;
         }
 
-        av_packet_rescale_ts(pkt_w, in_stream->time_base, out_stream->time_base);
+        av_packet_rescale_ts(pkt_w, in_stream->time_base,
+                             out_stream->time_base);
         pkt_w->stream_index = out_stream->index;
 
         // 写入数据

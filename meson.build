@@ -5,7 +5,7 @@ depsffmpeg = [dependency('libavcodec'), dependency('libavformat'), dependency('l
 
 src = files(
   'main.c',
-  'config.c',
+  'utils/config.c',
   'api/video.c',
   'api/merge.c',
   'libs/thpool.c'

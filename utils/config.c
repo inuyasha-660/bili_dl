@@ -1,4 +1,4 @@
-#include "config.h"
+#include "utils.h"
 #include <cJSON.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -74,35 +74,49 @@ static int cfg_read_video(char *config)
         cJSON *qn = cJSON_GetObjectItemCaseSensitive(require, "qn");
         cJSON *audio = cJSON_GetObjectItemCaseSensitive(require, "audio");
         cJSON *coding = cJSON_GetObjectItemCaseSensitive(require, "coding");
-        if (Bvid == NULL || part == NULL || mode == NULL || qn == NULL || audio == NULL || coding == NULL) {
-            fprintf(stderr, "Error: (line: %d) Found a NULL value\n", index + 1);
+        if (Bvid == NULL || part == NULL || mode == NULL || qn == NULL ||
+            audio == NULL || coding == NULL) {
+            fprintf(stderr, "Error: (line: %d) Found a NULL value\n",
+                    index + 1);
             err = 3;
             goto end;
         }
-        if (!cJSON_IsString(Bvid) || !cJSON_IsNumber(mode) || !cJSON_IsString(qn) || !cJSON_IsString(audio) ||
+        if (!cJSON_IsString(Bvid) || !cJSON_IsNumber(mode) ||
+            !cJSON_IsString(qn) || !cJSON_IsString(audio) ||
             !cJSON_IsString(coding)) {
-            fprintf(stderr, "Error: (line: %d) Found a value with invalid type\n", index + 1);
+            fprintf(stderr,
+                    "Error: (line: %d) Found a value with invalid type\n",
+                    index + 1);
             err = 3;
             goto end;
         }
 
-        account->video->Bvid = (char **)realloc(account->video->Bvid, (index + 1) * sizeof(char *));
-        account->video->mode = (int *)realloc(account->video->mode, (index + 1) * sizeof(int));
-        account->video->part = (int **)realloc(account->video->part, (index + 1) * sizeof(int *));
-        account->video->audio = (char **)realloc(account->video->audio, (index + 1) * sizeof(char *));
-        account->video->qn = (char **)realloc(account->video->qn, (index + 1) * sizeof(char *));
-        account->video->coding = (char **)realloc(account->video->coding, (index + 1) * sizeof(char *));
+        account->video->Bvid = (char **)realloc(account->video->Bvid,
+                                                (index + 1) * sizeof(char *));
+        account->video->mode =
+            (int *)realloc(account->video->mode, (index + 1) * sizeof(int));
+        account->video->part =
+            (int **)realloc(account->video->part, (index + 1) * sizeof(int *));
+        account->video->audio = (char **)realloc(account->video->audio,
+                                                 (index + 1) * sizeof(char *));
+        account->video->qn =
+            (char **)realloc(account->video->qn, (index + 1) * sizeof(char *));
+        account->video->coding = (char **)realloc(account->video->coding,
+                                                  (index + 1) * sizeof(char *));
         account->video->part[index] = NULL;
 
         int size = cJSON_GetArraySize(part);
         for (int i = 0; i < size; i++) {
             cJSON *part_item = cJSON_GetArrayItem(part, i);
             if (part_item == NULL || !cJSON_IsNumber(part_item)) {
-                fprintf(stderr, "Error: (line: %d item: %d) Failed to get part\n", index + 1, i);
+                fprintf(stderr,
+                        "Error: (line: %d item: %d) Failed to get part\n",
+                        index + 1, i);
                 err = 3;
                 goto end;
             }
-            account->video->part[index] = (int *)realloc(account->video->part[index], (i + 1) * sizeof(int));
+            account->video->part[index] = (int *)realloc(
+                account->video->part[index], (i + 1) * sizeof(int));
             account->video->part[index][i] = part_item->valueint;
         }
 

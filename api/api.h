@@ -2,6 +2,7 @@
 
 int api_dl_video_init();
 int api_video_merge(char *filename_video, char *filename_audio, char *outdir, char *outname);
+char *int_to_str(long num);
 
 typedef struct {
     char *buffer;

@@ -1,12 +1,12 @@
 #include "api/api.h"
-#include "config.h"
+#include "utils/utils.h"
 #include <curl/curl.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <wchar.h>
 
-#define VERSION "0.1.2"
+#define VERSION_APP "0.1.2"
 
 struct Account *account;
 
@@ -23,7 +23,8 @@ int init()
 
     int curl_err = curl_global_init(CURL_GLOBAL_DEFAULT);
     if (curl_err != 0) {
-        fprintf(stderr, "Error: Fail to initialize curl: %s\n", curl_easy_strerror(curl_err));
+        fprintf(stderr, "Error: Fail to initialize curl: %s\n",
+                curl_easy_strerror(curl_err));
         return curl_err;
     }
 
@@ -36,7 +37,7 @@ int main(int argc, char *argv[])
         fprintf(stderr, "Error: Wrong number of arguments(%d)\n", argc - 1);
         return 1;
     }
-    printf("bili_dl[%s]\n", VERSION);
+    printf("bili_dl[%s]\n", VERSION_APP);
 
     printf("INFO: Initialize and read configuration\n");
     if (init() != 0) {
