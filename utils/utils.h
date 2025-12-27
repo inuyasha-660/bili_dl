@@ -1,29 +1,22 @@
-int cfg_read();
+#include <stddef.h>
+
+#define P_ALL 0 // 0: 选中所有分P
+
+int cfg_read_global();
+int is_file_exists(const char *filename);
+char *read_file(const char *filename);
+int is_dir_exist(char *dir);
+char *int_to_str(long num);
+size_t api_curl_finish(void *buffer, size_t size, size_t nmemb, void *userp);
 
 struct Account {
     char *config_path;
+    char *config_str;
     char *SESSDATA;
     char *cookie; // 格式化完成的 SESSDATA
     int MaxThread;
     int Type; // 0: 初始化 1: 视频下载
     char *Output;
-    struct Video *video;
-};
-
-struct Video {
-    int count; // 视频总数
-    int *mode; // 0: 音频&视频 1: 视频 2: 音频
-    int **part; // 视频分P
-    char **Bvid;
-    char **qn;
-    char **audio;
-    char **coding;
-};
-
-struct Part {
-    int count;
-    char **cid;
-    char **part;
 };
 
 struct Wbi {
@@ -31,3 +24,8 @@ struct Wbi {
     char *sub_key;
     char mixin_key[33];
 };
+
+typedef struct {
+    char *buffer;
+    size_t length;
+} Buffer;

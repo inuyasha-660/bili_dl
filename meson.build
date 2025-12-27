@@ -5,10 +5,16 @@ depsffmpeg = [dependency('libavcodec'), dependency('libavformat'), dependency('l
 
 src = files(
   'main.c',
-  'utils/config.c',
-  'api/video.c',
-  'api/merge.c',
-  'libs/thpool.c'
+  'utils/configu.c',
+  'utils/wbi.c',
+  'utils/utils.c',
+  'api/video/video.c',
+  'api/video/configv.c',
+  'api/video/merge.c',
+  'api/folder/folder.c',
+  'api/folder/configf.c',
+  'libs/thpool.c',
+  'libs/md5.c'
   )
 
 executable('bili_dl', src, dependencies: [deps, depsffmpeg])

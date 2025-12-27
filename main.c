@@ -14,12 +14,12 @@ int init()
 {
     account = malloc(sizeof(struct Account));
     account->config_path = NULL;
+    account->config_str = NULL;
     account->SESSDATA = NULL;
     account->cookie = NULL;
     account->MaxThread = 1;
     account->Type = 0;
     account->Output = NULL;
-    account->video = NULL;
 
     int curl_err = curl_global_init(CURL_GLOBAL_DEFAULT);
     if (curl_err != 0) {
@@ -46,7 +46,7 @@ int main(int argc, char *argv[])
     }
     account->config_path = strdup(argv[1]);
 
-    if (cfg_read() != 0) {
+    if (cfg_read_global() != 0) {
         fprintf(stderr, "Exit with reading configuration error\n");
         return 1;
     }
@@ -62,6 +62,10 @@ int main(int argc, char *argv[])
     int err_perform = 0;
     switch (account->Type) {
     case 1: {
+        if (cfg_read_video() != 0) {
+            fprintf(stderr, "Error: read config err\n");
+            break;
+        }
         err_perform = api_dl_video_init();
         break;
     }

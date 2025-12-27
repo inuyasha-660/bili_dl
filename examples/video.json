@@ -2,7 +2,7 @@
     "SESSDATA": "***",
     "MaxThread": 4,
     "Type": 1,
-    "Output": "./video1",
+    "Output": "./video",
     "Require": [
         {
             "Bvid": "BV1794y1t7nw",

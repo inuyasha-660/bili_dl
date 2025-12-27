@@ -1,9 +1,8 @@
-#include "api.h"
+#include "api/api.h"
 #include "libs/thpool.h"
 #include "utils/utils.h"
 #include <cJSON.h>
 #include <curl/curl.h>
-#include <dirent.h>
 #include <errno.h>
 #include <pthread.h>
 #include <stdint.h>
@@ -11,54 +10,17 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
-#include <sys/types.h>
 
 #define _USERAGENT                                                             \
     "Mozilla/5.0 (X11; Linux x86_64; rv:146.0) Gecko/20100101 Firefox/146.0"
 #define _REFERER "https://www.bilibili.com"
 
 extern struct Account *account;
-struct Video *video;
+extern struct Video *video_s;
 static pthread_mutex_t lock_gl;
 
 const char *API_VIDEO_PART = "https://api.bilibili.com/x/player/pagelist";
 const char *API_VIDEO_STREAM = "https://api.bilibili.com/x/player/playurl";
-
-char *int_to_str(long num)
-{
-    int len = snprintf(NULL, 0, "%ld", num);
-    char *ret = (char *)malloc((len + 1) * sizeof(char));
-    if (ret == NULL) {
-        return NULL;
-    }
-    snprintf(ret, len + 1, "%ld", num);
-
-    return ret;
-}
-
-int is_dir_exist(char *dir)
-{
-    DIR *ret = opendir(dir);
-    if (ret == NULL) {
-        return 0;
-    }
-    closedir(ret);
-    return 1;
-}
-
-size_t api_curl_finish(void *buffer, size_t size, size_t nmemb, void *userp)
-{
-    size_t len_buffer = size * nmemb;
-    Buffer *buffer_s = (Buffer *)userp;
-    buffer_s->buffer = (char *)realloc(
-        buffer_s->buffer, (buffer_s->length + len_buffer + 1) * sizeof(char));
-
-    memcpy(buffer_s->buffer + buffer_s->length, buffer, len_buffer);
-    buffer_s->length += len_buffer;
-    buffer_s->buffer[buffer_s->length] = '\0';
-
-    return len_buffer;
-}
 
 void progress_print(int index)
 {
@@ -66,7 +28,7 @@ void progress_print(int index)
     completed += 1;
     pthread_mutex_lock(&lock_gl);
     printf("\033[32m[Completed]\033[0m [%d/%d](index: %d)\n", completed,
-           account->video->count, index);
+           video_s->count, index);
     pthread_mutex_unlock(&lock_gl);
 }
 
@@ -98,8 +60,8 @@ int api_dl_file(char *url, char *filename)
     return err_dl;
 }
 
-// index: account->video 引索; i: part 引索
-int api_dl_video_get_file(Buffer *buffer, int index, int i, struct Part *part)
+int api_dl_video_get_file(Buffer *buffer, int idx_v, int idx_p,
+                          struct Part *part)
 {
     int err_parse = 0;
     char *url_video = NULL;
@@ -148,9 +110,9 @@ int api_dl_video_get_file(Buffer *buffer, int index, int i, struct Part *part)
     }
 
     pthread_mutex_lock(&lock_gl);
-    char *qn_t = strdup(account->video->qn[index]);
-    char *coding_t = strdup(account->video->coding[index]);
-    char *audio_t = strdup(account->video->audio[index]);
+    char *qn_t = strdup(video_s->qn[idx_v]);
+    char *coding_t = strdup(video_s->coding[idx_v]);
+    char *audio_t = strdup(video_s->audio[idx_v]);
     pthread_mutex_unlock(&lock_gl);
 
     cJSON *video;
@@ -205,8 +167,8 @@ int api_dl_video_get_file(Buffer *buffer, int index, int i, struct Part *part)
 
     if (url_video == NULL) {
         pthread_mutex_lock(&lock_gl);
-        fprintf(stderr, "Error: Invalid qn&coding: %s&%s\n",
-                account->video->qn[index], account->video->coding[index]);
+        fprintf(stderr, "Error: Invalid qn&coding: %s&%s\n", video_s->qn[idx_v],
+                video_s->coding[idx_v]);
         pthread_mutex_unlock(&lock_gl);
         goto end;
     }
@@ -232,7 +194,6 @@ int api_dl_video_get_file(Buffer *buffer, int index, int i, struct Part *part)
         free(id_str);
 
     getbaseUrl_audio: {
-
         cJSON *baseUrl = cJSON_GetObjectItemCaseSensitive(audio, "baseUrl");
         if (baseUrl == NULL || !cJSON_IsString(baseUrl)) {
             fprintf(stderr, "Error: baseUrl(audio) is NULL\n");
@@ -249,15 +210,15 @@ int api_dl_video_get_file(Buffer *buffer, int index, int i, struct Part *part)
     if (url_audio == NULL) {
         pthread_mutex_lock(&lock_gl);
         fprintf(stderr, "Error: Invalid audio&coding: %s&%s\n",
-                account->video->qn[index], account->video->coding[index]);
+                video_s->qn[idx_v], video_s->coding[idx_v]);
         pthread_mutex_unlock(&lock_gl);
         goto end;
     }
 
     pthread_mutex_lock(&lock_gl);
-    int mode = account->video->mode[index];
+    int mode = video_s->mode[idx_v];
     char *outdir = strdup(account->Output);
-    char *outname = strdup(part->part[i]);
+    char *outname = strdup(part->part[idx_p]);
 
     if (!is_dir_exist(account->Output)) {
         int err_mk =
@@ -280,7 +241,7 @@ int api_dl_video_get_file(Buffer *buffer, int index, int i, struct Part *part)
     pthread_mutex_unlock(&lock_gl);
 
     switch (mode) {
-    case 0: { // TODO: 实现音视频合并
+    case 0: {
         api_dl_file(url_video, filename_video);
         api_dl_file(url_audio, filename_audio);
         api_video_merge(filename_video, filename_audio, outdir, outname);
@@ -292,41 +253,30 @@ int api_dl_video_get_file(Buffer *buffer, int index, int i, struct Part *part)
             fprintf(stderr, "Error: Failed to remove %s\n", filename_video);
         }
 
-        free(outdir);
-        free(outname);
-        free(filename_audio);
-        free(filename_video);
-        goto end;
+        goto free_dl;
     }
     case 1: {
         api_dl_file(url_video, filename_video);
-
-        free(filename_audio);
-        free(filename_video);
-        free(outdir);
-        free(outname);
-        goto end;
+        goto free_dl;
     }
     case 2: {
         api_dl_file(url_audio, filename_audio);
-
-        free(filename_audio);
-        free(filename_video);
-        free(outdir);
-        free(outname);
-        goto end;
+        goto free_dl;
     }
     default: {
         fprintf(stderr, "Error: Invalid value of mode\n");
 
-        free(filename_audio);
-        free(filename_video);
-        free(outdir);
-        free(outname);
         err_parse = 1;
-        goto end;
+        goto free_dl;
     }
     }
+
+free_dl: {
+    free(filename_audio);
+    free(filename_video);
+    free(outdir);
+    free(outname);
+}
 
 end:
     if (url_audio != NULL)
@@ -337,66 +287,73 @@ end:
     return err_parse;
 }
 
-int api_dl_video_get_stream_url(struct Part *part, int index)
+Buffer *api_dl_video_get_stream_url(struct Part *part, int idx_v, int idx_p)
+{
+    Buffer *buffer_u = malloc(sizeof(Buffer));
+    buffer_u->buffer = NULL;
+    buffer_u->length = 0;
+
+    CURL *curl = curl_easy_init();
+    pthread_mutex_lock(&lock_gl);
+    // 存在显式分P选择且未选中则跳过
+    if (video_s->part[idx_v][0] != P_ALL &&
+        video_s->part[idx_v][idx_p] != idx_p + 1) {
+        pthread_mutex_unlock(&lock_gl);
+        return 0;
+    }
+
+    size_t len =
+        snprintf(NULL, 0, "%s?bvid=%s&cid=%s&fnval=16&fourk=1",
+                 API_VIDEO_STREAM, video_s->Bvid[idx_v], part->cid[idx_v]);
+    char *url = (char *)malloc((len + 1) * sizeof(char));
+    snprintf(url, len + 1, "%s?bvid=%s&cid=%s&fnval=16&fourk=1",
+             API_VIDEO_STREAM, video_s->Bvid[idx_v], part->cid[idx_p]);
+    curl_easy_setopt(curl, CURLOPT_COOKIE, account->cookie);
+    pthread_mutex_unlock(&lock_gl);
+
+    printf("INFO: Get %s\n", url);
+
+    if (curl) {
+        CURLcode err_url;
+
+        curl_easy_setopt(curl, CURLOPT_URL, url);
+        curl_easy_setopt(curl, CURLOPT_WRITEDATA, buffer_u);
+        curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, api_curl_finish);
+        err_url = curl_easy_perform(curl);
+        if (err_url != CURLE_OK) {
+            pthread_mutex_lock(&lock_gl);
+            fprintf(stderr, "Error: Failed to get %s stream url\n",
+                    video_s->Bvid[idx_v]);
+            pthread_mutex_unlock(&lock_gl);
+
+            goto end;
+        }
+
+    end:
+        curl_easy_cleanup(curl);
+        free(url);
+
+    } else {
+        fprintf(stderr, "Error: Failed to create a new curl\n");
+        free(url);
+    }
+
+    return buffer_u;
+}
+
+int api_dl_video_down(struct Part *part, int idx_v)
 {
     int err = 0;
     for (int i = 0; i < part->count; i++) {
-        CURL *curl = curl_easy_init();
-        pthread_mutex_lock(&lock_gl);
-        if (account->video->part[index][0] != 0 &&
-            account->video->part[index][i] != i + 1) {
+        Buffer *buffer_u = api_dl_video_get_stream_url(part, idx_v, i);
+
+        int err_file = api_dl_video_get_file(buffer_u, idx_v, i, part);
+        if (err_file != 0) {
+            pthread_mutex_lock(&lock_gl);
+            fprintf(stderr, "Error: Failed to download %s\n",
+                    video_s->Bvid[idx_v]);
             pthread_mutex_unlock(&lock_gl);
-            continue;
-        }
-
-        size_t len = snprintf(NULL, 0, "%s?bvid=%s&cid=%s&fnval=16&fourk=1",
-                              API_VIDEO_STREAM, account->video->Bvid[index],
-                              part->cid[i]);
-        char *url = (char *)malloc((len + 1) * sizeof(char));
-        snprintf(url, len + 1, "%s?bvid=%s&cid=%s&fnval=16&fourk=1",
-                 API_VIDEO_STREAM, account->video->Bvid[index], part->cid[i]);
-        curl_easy_setopt(curl, CURLOPT_COOKIE, account->cookie);
-        pthread_mutex_unlock(&lock_gl);
-
-        printf("INFO: Get %s\n", url);
-
-        if (curl) {
-            CURLcode err_url;
-            Buffer *buffer_u = malloc(sizeof(Buffer));
-            buffer_u->buffer = NULL;
-            buffer_u->length = 0;
-
-            curl_easy_setopt(curl, CURLOPT_URL, url);
-            curl_easy_setopt(curl, CURLOPT_WRITEDATA, buffer_u);
-            curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, api_curl_finish);
-            err_url = curl_easy_perform(curl);
-            if (err_url != CURLE_OK) {
-                pthread_mutex_lock(&lock_gl);
-                fprintf(stderr, "Error: Failed to get %s stream url\n",
-                        account->video->Bvid[index]);
-                pthread_mutex_unlock(&lock_gl);
-                err = err_url;
-                goto end;
-            }
-
-            int err_file = api_dl_video_get_file(buffer_u, index, i, part);
-            if (err_file != 0) {
-                pthread_mutex_lock(&lock_gl);
-                fprintf(stderr, "Error: Failed to download %s\n",
-                        account->video->Bvid[index]);
-                pthread_mutex_unlock(&lock_gl);
-                err = err_file;
-            }
-        end:
-            curl_easy_cleanup(curl);
-            free(url);
-            free(buffer_u->buffer);
-            free(buffer_u);
-
-        } else {
-            fprintf(stderr, "Error: Failed to create a new curl\n");
-            free(url);
-            return 1;
+            err = err_file;
         }
     }
 
@@ -483,10 +440,10 @@ void api_dl_video(void *index_p)
 
         pthread_mutex_lock(&lock_gl);
         size_t len = snprintf(NULL, 0, "%s?bvid=%s", API_VIDEO_PART,
-                              account->video->Bvid[index]);
+                              video_s->Bvid[index]);
         char *url = (char *)malloc((len + 1) * sizeof(char));
         snprintf(url, len + 1, "%s?bvid=%s", API_VIDEO_PART,
-                 account->video->Bvid[index]);
+                 video_s->Bvid[index]);
 
         curl_easy_setopt(curl, CURLOPT_COOKIE, account->cookie);
         pthread_mutex_unlock(&lock_gl);
@@ -510,7 +467,7 @@ void api_dl_video(void *index_p)
         }
 
         // 视频下载
-        int err_dl = api_dl_video_get_stream_url(part, index);
+        int err_dl = api_dl_video_down(part, index);
         if (err_dl != 0) {
             fprintf(stderr, "Error: Download failed with %d\n", err_dl);
             goto end;
@@ -535,7 +492,7 @@ int api_dl_video_init()
     int err = 0;
     threadpool thpool_dl = thpool_init(account->MaxThread);
     pthread_mutex_init(&lock_gl, NULL);
-    for (int i = 0; i < account->video->count; i++) {
+    for (int i = 0; i < video_s->count; i++) {
         thpool_add_work(thpool_dl, (void *)api_dl_video, (void *)(uintptr_t)i);
     }
     thpool_wait(thpool_dl);

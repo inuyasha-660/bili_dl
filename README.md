@@ -3,8 +3,10 @@
 
 ## 功能
 - [x] 视频/音频下载(Bvid)
-- [ ] 收藏夹下载
-- [ ] 合集下载
+- [ ] 收藏夹
+- [ ] 系列
+- [ ] 番剧
+- [ ] 合集
 
 ## 用法
 ``bili_dl <CONFIG>``
@@ -14,7 +16,7 @@
 
 #### 公共参数
 - ``SESSDATA``: 储存于Cookie中，用于请求鉴权
-- ``MaxThread``: 可使用的最大线程数字
+- ``MaxThread``: 可使用的最大线程数
 - ``Type``: 目标类型(1: 视频)
 - ``Output``: 输出目录
 
@@ -48,7 +50,25 @@
 ``````
 当仅下载音频时(mode = 2)， ``coding``对象将不会被匹配，但需要保留
 
-查看示例： [examples/video1.json](/examples/video1.json)
+查看示例： [examples/video1.json](/examples/video.json)
+
+##### 收藏夹 (Type = 2)
+- ``fid``: 目标收藏夹 fid，请确保有权限访问
+- ``mode``/``qn``/``audio``/``coding`` 含义同上
+- ``except``: 此对象中的视频配置将覆盖全局配置
+
+``````json
+"Require": {
+        "fid": "3566286331",
+        "mode": "0",
+        "qn": "*",
+        "audio": "*",
+        "coding": "*",
+        "except": [
+            {"Bvid": "BV1rW411S7N9", "part": [0], "mode": "2", "qn": "*", "audio": "*", "coding": "*"}
+        ]
+    }
+``````
 
 ## 从源码构建
 ### 依赖
@@ -56,6 +76,7 @@
 - [cJSON](https://github.com/DaveGamble/cJSON) ([MIT license](https://github.com/DaveGamble/cJSON/blob/master/LICENSE))
 - [C-Thread-Pool](https://github.com/Pithikos/C-Thread-Pool) ([MIT license](https://github.com/Pithikos/C-Thread-Pool/blob/master/LICENSE))
 - [ffmpeg](https://www.ffmpeg.org)(libavcodec, libavformat) ([LICENSE](https://www.ffmpeg.org/legal.html))
+- [md5-c](https://github.com/Zunawe/md5-c) ([Unlicense license)](https://github.com/Zunawe/md5-c/blob/main/UNLICENSE]))
 
 ### Meson
 ``````sh

@@ -1,0 +1,16 @@
+{
+    "SESSDATA": "",
+    "MaxThread": 4,
+    "Type": 2,
+    "Output": "./folder",
+    "Require": {
+        "fid": "3566286331",
+        "mode": "0",
+        "qn": "*",
+        "audio": "*",
+        "coding": "*",
+        "except": [
+            {"Bvid": "BV1rW411S7N9", "part": [0], "mode": "2", "qn": "*", "audio": "*", "coding": "*"}
+        ]
+    }
+}
