@@ -6,6 +6,7 @@
 #include <string.h>
 
 struct Folder *folder;
+extern struct Video *video_s;
 extern struct Account *account;
 
 int cfg_read_folder()
@@ -32,6 +33,15 @@ int cfg_read_folder()
     folder->coding = NULL;
     folder->audio = NULL;
 
+    video_s = malloc(sizeof(struct Video));
+    video_s->count = 0;
+    video_s->Bvid = NULL;
+    video_s->part = NULL;
+    video_s->mode = NULL;
+    video_s->audio = NULL;
+    video_s->qn = NULL;
+    video_s->coding = NULL;
+
     cJSON *fid = cJSON_GetObjectItemCaseSensitive(Require, "fid");
     cJSON *mode = cJSON_GetObjectItemCaseSensitive(Require, "mode");
     cJSON *qn = cJSON_GetObjectItemCaseSensitive(Require, "qn");
@@ -50,35 +60,9 @@ int cfg_read_folder()
         goto end;
     }
 
+    // 读取 except 并填充 video_s
     cJSON *excepts = cJSON_GetObjectItemCaseSensitive(Require, "except");
-    cJSON *except;
-    int idx_e = 0;
-    cJSON_ArrayForEach(except, excepts)
-    {
-        cJSON *Bvid = cJSON_GetObjectItemCaseSensitive(except, "Bvid");
-        cJSON *part = cJSON_GetObjectItemCaseSensitive(except, "part");
-        cJSON *mode = cJSON_GetObjectItemCaseSensitive(except, "mode");
-        cJSON *qn = cJSON_GetObjectItemCaseSensitive(except, "qn");
-        cJSON *audio = cJSON_GetObjectItemCaseSensitive(except, "audio");
-        cJSON *coding = cJSON_GetObjectItemCaseSensitive(except, "coding");
-        if (Bvid == NULL || part == NULL || mode == NULL || qn == NULL ||
-            audio == NULL || coding == NULL) {
-            fprintf(stderr, "Error: (line: %d) Found a NULL value\n",
-                    idx_e + 1);
-            err = 3;
-            goto end;
-        }
-        if (!cJSON_IsString(Bvid) || !cJSON_IsNumber(mode) ||
-            !cJSON_IsString(qn) || !cJSON_IsString(audio) ||
-            !cJSON_IsString(coding)) {
-            fprintf(stderr,
-                    "Error: (line: %d) Found a value with invalid type\n",
-                    idx_e + 1);
-            err = 3;
-            goto end;
-        }
-        idx_e++;
-    }
+    cfg_read_video(excepts);
 
     folder->fid = strdup(fid->valuestring);
     folder->qn = strdup(qn->valuestring);
@@ -86,8 +70,79 @@ int cfg_read_folder()
     folder->coding = strdup(coding->valuestring);
     folder->audio = strdup(audio->valuestring);
 
+    Buffer *buffer_f = api_get_folder_ctn_json();
+    if (buffer_f->buffer == NULL) {
+        err = 3;
+        fprintf(stderr, "Error: Failed to get folder json\n");
+        goto end;
+    }
+
+    cJSON *root_f = cJSON_Parse(buffer_f->buffer);
+    if (root_f == NULL) {
+        fprintf(stderr, " Error: Failed to parse root_f\n");
+        err = 3;
+        goto free_buffer;
+    }
+    cJSON *data = cJSON_GetObjectItemCaseSensitive(root_f, "data");
+    if (data == NULL) {
+        fprintf(stderr, " Error: Failed to parse data\n");
+        err = 3;
+        goto free_buffer;
+    }
+
+    cJSON *videoobj;
+    int index = video_s->count;
+    int num_except = video_s->count;
+    cJSON_ArrayForEach(videoobj, data)
+    {
+        cJSON *bvid = cJSON_GetObjectItemCaseSensitive(videoobj, "bvid");
+        if (bvid == NULL || !cJSON_IsString(bvid)) {
+            fprintf(stderr, "Error: Failed to parse videoobj\n");
+            err = 3;
+            goto free_buffer;
+        }
+
+        for (int i = 0; i < num_except; i++) {
+            if (!strcmp(bvid->valuestring, video_s->Bvid[i]))
+                goto next;
+        }
+
+        video_s->Bvid =
+            (char **)realloc(video_s->Bvid, (index + 1) * sizeof(char *));
+        video_s->mode =
+            (int *)realloc(video_s->mode, (index + 1) * sizeof(int));
+        video_s->part =
+            (int **)realloc(video_s->part, (index + 1) * sizeof(int *));
+        video_s->audio =
+            (char **)realloc(video_s->audio, (index + 1) * sizeof(char *));
+        video_s->qn =
+            (char **)realloc(video_s->qn, (index + 1) * sizeof(char *));
+        video_s->coding =
+            (char **)realloc(video_s->coding, (index + 1) * sizeof(char *));
+
+        video_s->Bvid[index] = strdup(bvid->valuestring);
+        video_s->qn[index] = folder->qn;
+        video_s->mode[index] = folder->mode;
+        video_s->audio[index] = folder->audio;
+        video_s->coding[index] = folder->coding;
+        video_s->part[index] = NULL;
+        video_s->part[index] =
+            (int *)realloc(video_s->part[index], 2 * sizeof(int));
+        video_s->part[index][0] = 0;
+        video_s->part[index][1] = END_P;
+
+        index++;
+    next: {
+    }
+    }
+    video_s->count = index;
+
+free_buffer:
+    free(buffer_f->buffer);
+    free(buffer_f);
+    cJSON_Delete(root_f);
+
 end:
     cJSON_Delete(root);
-
     return err;
 }

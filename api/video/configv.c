@@ -5,19 +5,31 @@
 #include <stdlib.h>
 #include <string.h>
 
-struct Video *video_s;
+extern struct Video *video_s;
 struct Part *partl;
 extern struct Account *account;
 
-// 读取 Type = 1 时的 Require 数组
-int cfg_read_video()
+// 读取 Video 数组
+int cfg_read_video(cJSON *VideoObjIn)
 {
     int err = 0;
-    cJSON *root = cJSON_Parse(account->config_str);
-    if (root == NULL) {
-        fprintf(stderr, " Error: Failed to parse %s\n", account->config_path);
-        err = 3;
-        goto end;
+
+    cJSON *root;
+    cJSON *VideoObj;
+    if (VideoObjIn == NULL) {
+        root = cJSON_Parse(account->config_str);
+        if (root == NULL) {
+            fprintf(stderr, "Failed to parse %s\n", account->config_path);
+            goto end;
+        }
+        VideoObj = cJSON_GetObjectItemCaseSensitive(root, "Require");
+        if (VideoObj == NULL) {
+            fprintf(stderr, "Error: Failed to parse Require\n");
+            err = 3;
+            goto end;
+        }
+    } else {
+        VideoObj = VideoObjIn;
     }
 
     video_s = malloc(sizeof(struct Video));
@@ -29,15 +41,9 @@ int cfg_read_video()
     video_s->qn = NULL;
     video_s->coding = NULL;
 
-    cJSON *Requires = cJSON_GetObjectItemCaseSensitive(root, "Require");
-    if (Requires == NULL) {
-        fprintf(stderr, "Error: Failed to parse Require\n");
-        err = 3;
-        goto end;
-    }
     cJSON *require;
     int index = 0;
-    cJSON_ArrayForEach(require, Requires)
+    cJSON_ArrayForEach(require, VideoObj)
     {
         cJSON *Bvid = cJSON_GetObjectItemCaseSensitive(require, "Bvid");
         cJSON *part = cJSON_GetObjectItemCaseSensitive(require, "part");
@@ -47,7 +53,7 @@ int cfg_read_video()
         cJSON *coding = cJSON_GetObjectItemCaseSensitive(require, "coding");
         if (Bvid == NULL || part == NULL || mode == NULL || qn == NULL ||
             audio == NULL || coding == NULL) {
-            fprintf(stderr, "Error: (line: %d) Found a NULL value\n",
+            fprintf(stderr, "Error: (line(req): %d) Found a NULL value\n",
                     index + 1);
             err = 3;
             goto end;
@@ -56,7 +62,7 @@ int cfg_read_video()
             !cJSON_IsString(qn) || !cJSON_IsString(audio) ||
             !cJSON_IsString(coding)) {
             fprintf(stderr,
-                    "Error: (line: %d) Found a value with invalid type\n",
+                    "Error: (line(req): %d) Found a value with invalid type\n",
                     index + 1);
             err = 3;
             goto end;
@@ -77,20 +83,20 @@ int cfg_read_video()
         video_s->part[index] = NULL;
 
         int size = cJSON_GetArraySize(part);
+        video_s->part[index] = (int *)malloc((size + 1) * sizeof(int));
         for (int i = 0; i < size; i++) {
             cJSON *part_item = cJSON_GetArrayItem(part, i);
             if (part_item == NULL || !cJSON_IsNumber(part_item)) {
                 fprintf(stderr,
-                        "Error: (line: %d item: %d) Failed to get part\n",
+                        "Error: (line(part): %d item: %d) Failed to get part\n",
                         index + 1, i);
                 err = 3;
                 goto end;
             }
 
-            video_s->part[index] =
-                (int *)realloc(video_s->part[index], (i + 1) * sizeof(int));
             video_s->part[index][i] = part_item->valueint;
         }
+        video_s->part[index][size] = END_P; // 作为哨兵值
 
         video_s->Bvid[index] = strdup(Bvid->valuestring);
         video_s->mode[index] = mode->valueint;
@@ -104,6 +110,5 @@ int cfg_read_video()
 
 end:
     cJSON_Delete(root);
-
     return err;
 }

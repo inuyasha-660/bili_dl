@@ -1,4 +1,5 @@
-#include "utils.h"
+#include "utils/utils.h"
+#include "api/api.h"
 #include <dirent.h>
 #include <stdio.h>
 #include <stdlib.h>

@@ -8,7 +8,7 @@
 #include <string.h>
 
 int api_video_merge(char *filename_video, char *filename_audio, char *outdir,
-                    char *outname)
+                    char *outname, char *outcid)
 {
     fprintf(stderr, "INFO: Merging video and audio\n");
 
@@ -25,9 +25,9 @@ int api_video_merge(char *filename_video, char *filename_audio, char *outdir,
     }
     // 创建输出上下文
     AVFormatContext *out_ctx = NULL;
-    size_t len = snprintf(NULL, 0, "%s/%s.mp4", outdir, outname);
+    size_t len = snprintf(NULL, 0, "%s/%s-%s.mp4", outdir, outcid, outname);
     char *out_path = (char *)malloc((len + 1) * sizeof(char));
-    snprintf(out_path, len + 1, "%s/%s.mp4", outdir, outname);
+    snprintf(out_path, len + 1, "%s/%s-%s.mp4", outdir, outcid, outname);
     avformat_alloc_output_context2(&out_ctx, NULL, "mp4", out_path);
 
     // 打开媒体文件

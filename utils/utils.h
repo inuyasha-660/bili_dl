@@ -1,4 +1,5 @@
 #include <stddef.h>
+#include <cJSON.h>
 
 #define P_ALL 0 // 0: 选中所有分P
 
@@ -24,8 +25,3 @@ struct Wbi {
     char *sub_key;
     char mixin_key[33];
 };
-
-typedef struct {
-    char *buffer;
-    size_t length;
-} Buffer;

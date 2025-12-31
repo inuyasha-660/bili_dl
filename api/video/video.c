@@ -16,7 +16,7 @@
 #define _REFERER "https://www.bilibili.com"
 
 extern struct Account *account;
-extern struct Video *video_s;
+struct Video *video_s;
 static pthread_mutex_t lock_gl;
 
 const char *API_VIDEO_PART = "https://api.bilibili.com/x/player/pagelist";
@@ -219,6 +219,7 @@ int api_dl_video_get_file(Buffer *buffer, int idx_v, int idx_p,
     int mode = video_s->mode[idx_v];
     char *outdir = strdup(account->Output);
     char *outname = strdup(part->part[idx_p]);
+    char *outcid = strdup(part->cid[idx_p]);
 
     if (!is_dir_exist(account->Output)) {
         int err_mk =
@@ -231,20 +232,25 @@ int api_dl_video_get_file(Buffer *buffer, int idx_v, int idx_p,
         }
     }
     // 创建视频文件
-    size_t len_video = snprintf(NULL, 0, "%s/%s-video.m4s", outdir, outname);
+    size_t len_video =
+        snprintf(NULL, 0, "%s/%s-%s-video.m4s", outdir, outcid, outname);
     char *filename_video = (char *)malloc((len_video + 1) * sizeof(char));
-    snprintf(filename_video, len_video + 1, "%s/%s-video.m4s", outdir, outname);
+    snprintf(filename_video, len_video + 1, "%s/%s-%s-video.m4s", outdir,
+             outcid, outname);
     // 创建音频文件
-    size_t len_audio = snprintf(NULL, 0, "%s/%s-audio.m4s", outdir, outname);
+    size_t len_audio =
+        snprintf(NULL, 0, "%s/%s-%s-audio.m4s", outdir, outcid, outname);
     char *filename_audio = (char *)malloc((len_audio + 1) * sizeof(char));
-    snprintf(filename_audio, len_audio + 1, "%s/%s-audio.m4s", outdir, outname);
+    snprintf(filename_audio, len_audio + 1, "%s/%s-%s-audio.m4s", outdir,
+             outcid, outname);
     pthread_mutex_unlock(&lock_gl);
 
     switch (mode) {
     case 0: {
         api_dl_file(url_video, filename_video);
         api_dl_file(url_audio, filename_audio);
-        api_video_merge(filename_video, filename_audio, outdir, outname);
+        api_video_merge(filename_video, filename_audio, outdir, outname,
+                        outcid);
 
         if (remove(filename_audio) != 0) {
             fprintf(stderr, "Error: Failed to remove %s\n", filename_audio);
@@ -295,12 +301,6 @@ Buffer *api_dl_video_get_stream_url(struct Part *part, int idx_v, int idx_p)
 
     CURL *curl = curl_easy_init();
     pthread_mutex_lock(&lock_gl);
-    // 存在显式分P选择且未选中则跳过
-    if (video_s->part[idx_v][0] != P_ALL &&
-        video_s->part[idx_v][idx_p] != idx_p + 1) {
-        pthread_mutex_unlock(&lock_gl);
-        return 0;
-    }
 
     size_t len =
         snprintf(NULL, 0, "%s?bvid=%s&cid=%s&fnval=16&fourk=1",
@@ -344,7 +344,17 @@ Buffer *api_dl_video_get_stream_url(struct Part *part, int idx_v, int idx_p)
 int api_dl_video_down(struct Part *part, int idx_v)
 {
     int err = 0;
+    size_t idx_p_choice = 0;
     for (int i = 0; i < part->count; i++) {
+        if (video_s->part[idx_v][idx_p_choice] == -1)
+            break;
+
+        // 存在显示分P指定且与当前分P(i)不相等时跳过
+        if (video_s->part[idx_v][0] != P_ALL &&
+            i != video_s->part[idx_v][idx_p_choice]) {
+            continue;
+        }
+
         Buffer *buffer_u = api_dl_video_get_stream_url(part, idx_v, i);
 
         int err_file = api_dl_video_get_file(buffer_u, idx_v, i, part);
@@ -355,6 +365,7 @@ int api_dl_video_down(struct Part *part, int idx_v)
             pthread_mutex_unlock(&lock_gl);
             err = err_file;
         }
+        idx_p_choice++;
     }
 
     return err;

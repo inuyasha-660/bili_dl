@@ -50,6 +50,12 @@ int cfg_read_global()
         err = 1;
         goto end;
     }
+    cJSON *Requires = cJSON_GetObjectItemCaseSensitive(root, "Require");
+    if (Requires == NULL) {
+        fprintf(stderr, "Error: Require is NULL\n");
+        err = 1;
+        goto end;
+    }
 
     account->SESSDATA = strdup(SESSDATA->valuestring);
     account->MaxThread = MaxThread->valueint;

@@ -1,10 +1,11 @@
 #include <stddef.h>
+#include <cJSON.h>
+#define END_P -1
 
-int api_dl_video_init();
-int cfg_read_video();
-int api_video_merge(char *filename_video, char *filename_audio, char *outdir, char *outname);
-
-int cfg_read_folder();
+typedef struct {
+    char *buffer;
+    size_t length;
+} Buffer;
 
 struct Video {
     int count; // 视频总数
@@ -30,5 +31,13 @@ struct Folder {
     char *coding;
 };
 
+int api_dl_video_init();
+int cfg_read_video(cJSON *VideoObjIn);
+int api_video_merge(char *filename_video, char *filename_audio, char *outdir, char *outname,  char *outcid);
+Buffer * api_get_folder_ctn_json();
+int cfg_read_folder();
+int api_dl_folder_init();
+
 extern const char *API_VIDEO_PART;
 extern const char *API_VIDEO_STREAM;
+extern const char *API_FOLDER_CTN;

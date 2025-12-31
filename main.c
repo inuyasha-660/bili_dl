@@ -62,11 +62,19 @@ int main(int argc, char *argv[])
     int err_perform = 0;
     switch (account->Type) {
     case 1: {
-        if (cfg_read_video() != 0) {
-            fprintf(stderr, "Error: read config err\n");
+        if (cfg_read_video(NULL) != 0) {
+            fprintf(stderr, "Error: Failed to read %s\n", argv[1]);
             break;
         }
         err_perform = api_dl_video_init();
+        break;
+    }
+    case 2: {
+        if (cfg_read_folder() != 0) {
+            fprintf(stderr, "Error: Failed to read %s\n", argv[1]);
+            break;
+        }
+        err_perform = api_dl_folder_init();
         break;
     }
     default: {
