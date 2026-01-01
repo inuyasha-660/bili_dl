@@ -46,22 +46,4 @@ Buffer *api_get_folder_ctn_json()
     return buffer_ctn;
 }
 
-int api_dl_folder_init()
-{
-    for (int i = 0; i < video_s->count; i++) {
-        printf("bvid: %s mode: %d audio: %s coding: %s qn: %s part: ",
-               video_s->Bvid[i], video_s->mode[i], video_s->audio[i],
-               video_s->coding[i], video_s->qn[i]);
-
-        int k = 0;
-        while (video_s->part[i][k] != END_P) {
-            printf("%d ", video_s->part[i][k]);
-            k += 1;
-        }
-
-        printf("\n");
-    }
-
-    int err = 0;
-    return err;
-}
+int api_dl_folder_init() { return api_dl_video_init(); }

@@ -10,7 +10,16 @@
         "audio": "*",
         "coding": "*",
         "except": [
-            {"Bvid": "BV1rW411S7N9", "part": [0], "mode": "2", "qn": "*", "audio": "*", "coding": "*"}
+            {
+                "Bvid": "BV1rW411S7N9",
+                "part": [
+                    0
+                ],
+                "mode": "2",
+                "qn": "*",
+                "audio": "*",
+                "coding": "*"
+            }
         ]
     }
 }

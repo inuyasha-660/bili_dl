@@ -38,7 +38,16 @@ int api_dl_file(char *url, char *filename)
     FILE *file = fopen(filename, "wb");
     if (file == NULL) {
         fprintf(stderr, "Error: Failed to open %s\n", filename);
+        if (curl)
+            curl_easy_cleanup(curl);
+        return CURLE_WRITE_ERROR;
     }
+    if (curl == NULL) {
+        fprintf(stderr, "Error: Failed to create a new curl\n");
+        fclose(file);
+        return CURLE_FAILED_INIT;
+    }
+
     flockfile(file);
     curl_easy_setopt(curl, CURLOPT_REFERER, _REFERER);
     curl_easy_setopt(curl, CURLOPT_USERAGENT, _USERAGENT);
@@ -304,7 +313,7 @@ Buffer *api_dl_video_get_stream_url(struct Part *part, int idx_v, int idx_p)
 
     size_t len =
         snprintf(NULL, 0, "%s?bvid=%s&cid=%s&fnval=16&fourk=1",
-                 API_VIDEO_STREAM, video_s->Bvid[idx_v], part->cid[idx_v]);
+                 API_VIDEO_STREAM, video_s->Bvid[idx_v], part->cid[idx_p]);
     char *url = (char *)malloc((len + 1) * sizeof(char));
     snprintf(url, len + 1, "%s?bvid=%s&cid=%s&fnval=16&fourk=1",
              API_VIDEO_STREAM, video_s->Bvid[idx_v], part->cid[idx_p]);
@@ -346,14 +355,19 @@ int api_dl_video_down(struct Part *part, int idx_v)
     int err = 0;
     size_t idx_p_choice = 0;
     for (int i = 0; i < part->count; i++) {
-        if (video_s->part[idx_v][idx_p_choice] == -1)
+        pthread_mutex_lock(&lock_gl);
+        if (video_s->part[idx_v][idx_p_choice] == -1) {
+            pthread_mutex_unlock(&lock_gl);
             break;
+        }
 
         // 存在显示分P指定且与当前分P(i)不相等时跳过
         if (video_s->part[idx_v][0] != P_ALL &&
-            i != video_s->part[idx_v][idx_p_choice]) {
+            (i + 1) != video_s->part[idx_v][idx_p_choice]) {
+            pthread_mutex_unlock(&lock_gl);
             continue;
         }
+        pthread_mutex_unlock(&lock_gl);
 
         Buffer *buffer_u = api_dl_video_get_stream_url(part, idx_v, i);
 
@@ -434,6 +448,7 @@ void api_dl_video(void *index_p)
     int index = (uintptr_t)index_p;
     if (account->cookie == NULL) {
         fprintf(stderr, "Error: cookie is NULL\n");
+        pthread_mutex_unlock(&lock_gl);
         return;
     }
     pthread_mutex_unlock(&lock_gl);

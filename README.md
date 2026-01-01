@@ -3,7 +3,7 @@
 
 ## 功能
 - [x] 视频/音频下载(Bvid)
-- [ ] 收藏夹
+- [x] 收藏夹
 - [ ] 系列
 - [ ] 番剧
 - [ ] 合集
@@ -44,8 +44,27 @@
 
 ``````json
 "Require": [
-    {"Bvid": "BV14EUHB8EXr", "part": [0], "mode": 0, "qn": "80", "audio": "30280", "coding": "12"},
-    {"Bvid": "BV1kt411z7ND", "part": [1, 2], "mode": 1, "qn": "74", "audio": "30280", "coding": "7"}
+    {
+            "Bvid": "BV1794y1t7nw",
+            "part": [
+                0
+            ],
+            "mode": 2,
+            "qn": "80",
+            "audio": "30280",
+            "coding": "12"
+        },
+        {
+            "Bvid": "BV1kt411z7ND",
+            "part": [
+                1,
+                2
+            ],
+            "mode": 1,
+            "qn": "*",
+            "audio": "*",
+            "coding": "*s"
+        }
   ]
 ``````
 当仅下载音频时(mode = 2)， ``coding``对象将不会被匹配，但需要保留
@@ -60,12 +79,12 @@
 ``````json
 "Require": {
         "fid": "3566286331",
-        "mode": "0",
+        "mode": 0,
         "qn": "*",
         "audio": "*",
         "coding": "*",
         "except": [
-            {"Bvid": "BV1rW411S7N9", "part": [0], "mode": "2", "qn": "*", "audio": "*", "coding": "*"}
+            {"Bvid": "BV1rW411S7N9", "part": [1], "mode": 2, "qn": "*", "audio": "*", "coding": "*"}
         ]
     }
 ``````

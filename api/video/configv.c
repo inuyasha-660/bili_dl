@@ -9,13 +9,13 @@ extern struct Video *video_s;
 struct Part *partl;
 extern struct Account *account;
 
-// 读取 Video 数组
+// 读取 Video 数组， VideoObjIn 应由传入者释放
 int cfg_read_video(cJSON *VideoObjIn)
 {
     int err = 0;
 
-    cJSON *root;
-    cJSON *VideoObj;
+    cJSON *root = NULL;
+    cJSON *VideoObj = NULL;
     if (VideoObjIn == NULL) {
         root = cJSON_Parse(account->config_str);
         if (root == NULL) {
@@ -109,6 +109,8 @@ int cfg_read_video(cJSON *VideoObjIn)
     video_s->count = index;
 
 end:
-    cJSON_Delete(root);
+    if (root != NULL) {
+        cJSON_Delete(root);
+    }
     return err;
 }
