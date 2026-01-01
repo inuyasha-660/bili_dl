@@ -1,5 +1,5 @@
 # BILI_DL
-基于配置的轻量化 BiliBili 视频下载器
+基于配置的 Cli BiliBili 视频下载工具
 
 ## 功能
 - [x] 视频/音频下载(Bvid)
