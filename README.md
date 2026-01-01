@@ -69,8 +69,6 @@
 ``````
 当仅下载音频时(mode = 2)， ``coding``对象将不会被匹配，但需要保留
 
-查看示例： [examples/video1.json](/examples/video.json)
-
 ##### 收藏夹 (Type = 2)
 - ``fid``: 目标收藏夹 fid，请确保有权限访问
 - ``mode``/``qn``/``audio``/``coding`` 含义同上
@@ -95,6 +93,7 @@
     ]
   }
 ``````
+查看示例配置： [examples/](/examples/)
 
 ## 从源码构建
 ### 依赖
