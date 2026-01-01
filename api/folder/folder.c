@@ -33,14 +33,14 @@ Buffer *api_get_folder_ctn_json()
 
         err_ctn = curl_easy_perform(curl);
         if (err_ctn != CURLE_OK) {
-            fprintf(stderr, "Failed to get %s\n", url);
+            error("Failed to get %s", url);
         }
 
         free(url);
         curl_easy_cleanup(curl);
 
     } else {
-        fprintf(stderr, "Error: Failed to initiliza curl\n");
+        error("Failed to initiliza curl");
     }
 
     return buffer_ctn;

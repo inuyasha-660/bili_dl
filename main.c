@@ -23,8 +23,8 @@ int init()
 
     int curl_err = curl_global_init(CURL_GLOBAL_DEFAULT);
     if (curl_err != 0) {
-        fprintf(stderr, "Error: Fail to initialize curl: %s\n",
-                curl_easy_strerror(curl_err));
+        error("Error: Fail to initialize curl: %s",
+              curl_easy_strerror(curl_err));
         return curl_err;
     }
 
@@ -39,15 +39,15 @@ int main(int argc, char *argv[])
     }
     printf("bili_dl[%s]\n", VERSION_APP);
 
-    printf("INFO: Initialize and read configuration\n");
+    info("Initialize and read configuration");
     if (init() != 0) {
-        fprintf(stderr, "Exit with initialization error\n");
+        error("Exit with initialization error");
         return 1;
     }
     account->config_path = strdup(argv[1]);
 
     if (cfg_read_global() != 0) {
-        fprintf(stderr, "Exit with reading configuration error\n");
+        error("Exit with reading configuration error");
         return 1;
     }
 
@@ -55,7 +55,7 @@ int main(int argc, char *argv[])
     printf("Start performing(Y/n): ");
     char confirm = fgetwc(stdin);
     if (confirm != 'y' && confirm != 'Y') {
-        fprintf(stdout, "Exit with 0\n");
+        info("Exit with code 0");
         return 0;
     }
 
@@ -63,7 +63,7 @@ int main(int argc, char *argv[])
     switch (account->Type) {
     case 1: {
         if (cfg_read_video(NULL) != 0) {
-            fprintf(stderr, "Error: Failed to read %s\n", argv[1]);
+            error("Error: Failed to read %s", argv[1]);
             break;
         }
         err_perform = api_dl_video_init();
@@ -71,14 +71,14 @@ int main(int argc, char *argv[])
     }
     case 2: {
         if (cfg_read_folder() != 0) {
-            fprintf(stderr, "Error: Failed to read %s\n", argv[1]);
+            error("Error: Failed to read %s", argv[1]);
             break;
         }
         err_perform = api_dl_folder_init();
         break;
     }
     default: {
-        fprintf(stderr, "Error: Invalid type: %d\n", account->Type);
+        error("Error: Invalid type: %d", account->Type);
         return 1;
     }
     }

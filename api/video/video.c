@@ -37,13 +37,13 @@ int api_dl_file(char *url, char *filename)
     CURL *curl = curl_easy_init();
     FILE *file = fopen(filename, "wb");
     if (file == NULL) {
-        fprintf(stderr, "Error: Failed to open %s\n", filename);
+        error("Failed to open %s", filename);
         if (curl)
             curl_easy_cleanup(curl);
         return CURLE_WRITE_ERROR;
     }
     if (curl == NULL) {
-        fprintf(stderr, "Error: Failed to create a new curl\n");
+        error("Failed to create a new curl");
         fclose(file);
         return CURLE_FAILED_INIT;
     }
@@ -57,10 +57,10 @@ int api_dl_file(char *url, char *filename)
     curl_easy_setopt(curl, CURLOPT_URL, url);
     curl_easy_setopt(curl, CURLOPT_WRITEDATA, file);
 
-    printf("INFO: Get: %s\n", url);
+    info("Get: %s\n", url); // 为便于查看增加一行间距
     int err_dl = curl_easy_perform(curl);
     if (err_dl != CURLE_OK) {
-        fprintf(stderr, "Error: %s\n", curl_easy_strerror(err_dl));
+        error("%s", curl_easy_strerror(err_dl));
     }
     funlockfile(file);
 
@@ -78,43 +78,43 @@ int api_dl_video_get_file(Buffer *buffer, int idx_v, int idx_p,
     cJSON *root = cJSON_Parse(buffer->buffer);
     if (root == NULL) {
         err_parse = 1;
-        fprintf(stderr, "Error: Failed to parse stream json\n");
+        error("Failed to parse stream json");
         goto end;
     }
     cJSON *code = cJSON_GetObjectItemCaseSensitive(root, "code");
     if (code == NULL || !cJSON_IsNumber(code)) {
         err_parse = 1;
-        fprintf(stderr, "Error: Failed to parse code\n");
+        error("Failed to parse code");
         goto end;
     }
     if (code->valueint != 0) {
         err_parse = 1;
-        fprintf(stderr, "Error: Request error: %d\n", code->valueint);
+        error("Request error: %d", code->valueint);
         goto end;
     }
 
     cJSON *data = cJSON_GetObjectItemCaseSensitive(root, "data");
     if (data == NULL) {
         err_parse = 1;
-        fprintf(stderr, "Error: Failed to parse data\n");
+        error("Failed to parse data");
         goto end;
     }
     cJSON *dash = cJSON_GetObjectItemCaseSensitive(data, "dash");
     if (dash == NULL) {
         err_parse = 1;
-        fprintf(stderr, "Error: Failed to get data::dash\n");
+        error("Failed to get data::dash");
         goto end;
     }
     cJSON *Videos = cJSON_GetObjectItemCaseSensitive(dash, "video");
     if (Videos == NULL) {
         err_parse = 1;
-        fprintf(stderr, "Error: Failed to get dash::video\n");
+        error("Failed to get dash::video");
         goto end;
     }
     cJSON *Audios = cJSON_GetObjectItemCaseSensitive(dash, "audio");
     if (Audios == NULL) {
         err_parse = 1;
-        fprintf(stderr, "Error: Failed to get dash::audio\n");
+        error("Failed to get dash::audio");
         goto end;
     }
 
@@ -129,7 +129,7 @@ int api_dl_video_get_file(Buffer *buffer, int idx_v, int idx_p,
     {
         cJSON *id = cJSON_GetObjectItemCaseSensitive(video, "id");
         if (id == NULL || !cJSON_IsNumber(id)) {
-            fprintf(stderr, "Error: id(video) is NULL\n");
+            error("id(video) is NULL");
             err_parse = 2;
             goto end;
         }
@@ -161,7 +161,7 @@ int api_dl_video_get_file(Buffer *buffer, int idx_v, int idx_p,
     getbaseUrl: {
         cJSON *baseUrl = cJSON_GetObjectItemCaseSensitive(video, "baseUrl");
         if (baseUrl == NULL || !cJSON_IsString(baseUrl)) {
-            fprintf(stderr, "Error: baseUrl(video) is NULL\n");
+            error("baseUrl(video) is NULL");
             err_parse = 2;
             free(qn_t);
             free(coding_t);
@@ -176,8 +176,8 @@ int api_dl_video_get_file(Buffer *buffer, int idx_v, int idx_p,
 
     if (url_video == NULL) {
         pthread_mutex_lock(&lock_gl);
-        fprintf(stderr, "Error: Invalid qn&coding: %s&%s\n", video_s->qn[idx_v],
-                video_s->coding[idx_v]);
+        error("Invalid qn&coding: %s&%s", video_s->qn[idx_v],
+              video_s->coding[idx_v]);
         pthread_mutex_unlock(&lock_gl);
         goto end;
     }
@@ -187,7 +187,7 @@ int api_dl_video_get_file(Buffer *buffer, int idx_v, int idx_p,
     {
         cJSON *id = cJSON_GetObjectItemCaseSensitive(audio, "id");
         if (id == NULL || !cJSON_IsNumber(id)) {
-            fprintf(stderr, "Error: id(audio) is NULL\n");
+            error("id(audio) is NULL");
             err_parse = 3;
             goto end;
         }
@@ -205,7 +205,7 @@ int api_dl_video_get_file(Buffer *buffer, int idx_v, int idx_p,
     getbaseUrl_audio: {
         cJSON *baseUrl = cJSON_GetObjectItemCaseSensitive(audio, "baseUrl");
         if (baseUrl == NULL || !cJSON_IsString(baseUrl)) {
-            fprintf(stderr, "Error: baseUrl(audio) is NULL\n");
+            error("baseUrl(audio) is NULL");
             err_parse = 3;
             free(audio_t);
             goto end;
@@ -218,8 +218,8 @@ int api_dl_video_get_file(Buffer *buffer, int idx_v, int idx_p,
 
     if (url_audio == NULL) {
         pthread_mutex_lock(&lock_gl);
-        fprintf(stderr, "Error: Invalid audio&coding: %s&%s\n",
-                video_s->qn[idx_v], video_s->coding[idx_v]);
+        error("Invalid audio&coding: %s&%s", video_s->qn[idx_v],
+              video_s->coding[idx_v]);
         pthread_mutex_unlock(&lock_gl);
         goto end;
     }
@@ -234,7 +234,9 @@ int api_dl_video_get_file(Buffer *buffer, int idx_v, int idx_p,
         int err_mk =
             mkdir(account->Output, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
         if (err_mk != 0) {
-            fprintf(stderr, "Error: %s\n", strerror(errno));
+            char *err_s = strerror(errno);
+            error("%s", err_s);
+            free(err_s);
             err_parse = err_mk;
             pthread_mutex_unlock(&lock_gl);
             goto end;
@@ -262,10 +264,10 @@ int api_dl_video_get_file(Buffer *buffer, int idx_v, int idx_p,
                         outcid);
 
         if (remove(filename_audio) != 0) {
-            fprintf(stderr, "Error: Failed to remove %s\n", filename_audio);
+            error("Failed to remove %s", filename_audio);
         }
         if (remove(filename_video) != 0) {
-            fprintf(stderr, "Error: Failed to remove %s\n", filename_video);
+            error("Failed to remove %s", filename_video);
         }
 
         goto free_dl;
@@ -279,8 +281,7 @@ int api_dl_video_get_file(Buffer *buffer, int idx_v, int idx_p,
         goto free_dl;
     }
     default: {
-        fprintf(stderr, "Error: Invalid value of mode\n");
-
+        error("Invalid value of mode");
         err_parse = 1;
         goto free_dl;
     }
@@ -320,7 +321,7 @@ Buffer *api_dl_video_get_stream_url(struct Part *part, int idx_v, int idx_p)
     curl_easy_setopt(curl, CURLOPT_COOKIE, account->cookie);
     pthread_mutex_unlock(&lock_gl);
 
-    printf("INFO: Get %s\n", url);
+    info("Get %s", url);
 
     if (curl) {
         CURLcode err_url;
@@ -331,8 +332,7 @@ Buffer *api_dl_video_get_stream_url(struct Part *part, int idx_v, int idx_p)
         err_url = curl_easy_perform(curl);
         if (err_url != CURLE_OK) {
             pthread_mutex_lock(&lock_gl);
-            fprintf(stderr, "Error: Failed to get %s stream url\n",
-                    video_s->Bvid[idx_v]);
+            error("Failed to get %s stream url", video_s->Bvid[idx_v]);
             pthread_mutex_unlock(&lock_gl);
 
             goto end;
@@ -343,7 +343,7 @@ Buffer *api_dl_video_get_stream_url(struct Part *part, int idx_v, int idx_p)
         free(url);
 
     } else {
-        fprintf(stderr, "Error: Failed to create a new curl\n");
+        error("Failed to create a new curl");
         free(url);
     }
 
@@ -374,8 +374,7 @@ int api_dl_video_down(struct Part *part, int idx_v)
         int err_file = api_dl_video_get_file(buffer_u, idx_v, i, part);
         if (err_file != 0) {
             pthread_mutex_lock(&lock_gl);
-            fprintf(stderr, "Error: Failed to download %s\n",
-                    video_s->Bvid[idx_v]);
+            error("Failed to download %s", video_s->Bvid[idx_v]);
             pthread_mutex_unlock(&lock_gl);
             err = err_file;
         }
@@ -390,13 +389,13 @@ int api_dl_video_get_cid(char *buffer, struct Part *ret)
     int err_get = 0;
     cJSON *root = cJSON_Parse(buffer);
     if (root == NULL) {
-        fprintf(stderr, "Error: Failed to parse json::cid\n");
+        error("Failed to parse json::cid");
         err_get = -1;
         goto end;
     }
     cJSON *data = cJSON_GetObjectItemCaseSensitive(root, "data");
     if (data == NULL) {
-        fprintf(stderr, "Error: Failed to get data from cid::data\n");
+        error("Failed to get data from cid::data");
         err_get = -1;
         goto end;
     }
@@ -406,26 +405,26 @@ int api_dl_video_get_cid(char *buffer, struct Part *ret)
     {
         cJSON *cid = cJSON_GetObjectItemCaseSensitive(parts, "cid");
         if (cid == NULL || !cJSON_IsNumber(cid)) {
-            fprintf(stderr, "Error: Failed to read cid from data::cid\n");
+            error("Failed to read cid from data::cid");
             err_get = -1;
             goto end;
         }
         cJSON *part = cJSON_GetObjectItemCaseSensitive(parts, "part");
         if (part == NULL || !cJSON_IsString(part)) {
-            fprintf(stderr, "Error: Failed to read part from data::part\n");
+            error("Failed to read part from data::part");
             err_get = -1;
             goto end;
         }
 
         ret->cid = (char **)realloc(ret->cid, (index + 1) * sizeof(char *));
         if (ret->cid == NULL) {
-            fprintf(stderr, "Error: Failed to realloc cid array\n");
+            error("Failed to realloc cid array");
             err_get = -1;
             goto end;
         }
         ret->part = (char **)realloc(ret->part, (index + 1) * sizeof(char *));
         if (ret->part == NULL) {
-            fprintf(stderr, "Error: Failed to realloc part array\n");
+            error("Failed to realloc part array");
             err_get = -1;
             goto end;
         }
@@ -447,7 +446,7 @@ void api_dl_video(void *index_p)
     pthread_mutex_lock(&lock_gl);
     int index = (uintptr_t)index_p;
     if (account->cookie == NULL) {
-        fprintf(stderr, "Error: cookie is NULL\n");
+        error("cookie is NULL");
         pthread_mutex_unlock(&lock_gl);
         return;
     }
@@ -474,7 +473,7 @@ void api_dl_video(void *index_p)
         curl_easy_setopt(curl, CURLOPT_COOKIE, account->cookie);
         pthread_mutex_unlock(&lock_gl);
 
-        printf("INFO: Get %s\n", url);
+        info("Get %s", url);
 
         curl_easy_setopt(curl, CURLOPT_URL, url);
         curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, api_curl_finish);
@@ -488,14 +487,14 @@ void api_dl_video(void *index_p)
         // 获取 Cid
         int err_get = api_dl_video_get_cid(buffer_cid->buffer, part);
         if (part == NULL || err_cid != 0) {
-            fprintf(stderr, "Error(%d): part is NULL\n", err_get);
+            error("part(%d) is NULL", err_get);
             goto end;
         }
 
         // 视频下载
         int err_dl = api_dl_video_down(part, index);
         if (err_dl != 0) {
-            fprintf(stderr, "Error: Download failed with %d\n", err_dl);
+            error("Download failed with %d", err_dl);
             goto end;
         }
 
@@ -510,7 +509,7 @@ void api_dl_video(void *index_p)
 
         return;
     }
-    fprintf(stderr, "Error: Failed to create a new curl\n");
+    error("Failed to create a new curl");
 }
 
 int api_dl_video_init()

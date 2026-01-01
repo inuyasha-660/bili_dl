@@ -42,7 +42,7 @@ char *read_file(const char *filename)
 {
     FILE *file = fopen(filename, "r");
     if (file == NULL) {
-        fprintf(stderr, "Error: Fail to open %s\n", filename);
+        error("Fail to open %s", filename);
         return NULL;
     }
     fseek(file, 0L, SEEK_END);

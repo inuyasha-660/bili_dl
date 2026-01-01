@@ -77,16 +77,23 @@
 - ``except``: 此对象中的视频配置将覆盖全局配置
 
 ``````json
-"Require": {
-        "fid": "3566286331",
-        "mode": 0,
+  "Require": {
+    "fid": "3566286331",
+    "mode": 0,
+    "qn": "*",
+    "audio": "*",
+    "coding": "*",
+    "except": [
+      {
+        "Bvid": "BV1rW411S7N9",
+        "part": [1],
+        "mode": 2,
         "qn": "*",
         "audio": "*",
-        "coding": "*",
-        "except": [
-            {"Bvid": "BV1rW411S7N9", "part": [1], "mode": 2, "qn": "*", "audio": "*", "coding": "*"}
-        ]
-    }
+        "coding": "*"
+      }
+    ]
+  }
 ``````
 
 ## 从源码构建

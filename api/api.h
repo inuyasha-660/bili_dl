@@ -23,7 +23,7 @@ struct Part {
     char **part;
 };
 
-struct Folder { 
+struct Folder {
     char *fid;
     int mode;
     char *qn;

@@ -7,6 +7,7 @@ src = files(
   'main.c',
   'utils/configu.c',
   'utils/wbi.c',
+  'utils/log.c',
   'utils/utils.c',
   'api/video/video.c',
   'api/video/configv.c',

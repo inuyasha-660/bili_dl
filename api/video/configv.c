@@ -1,7 +1,6 @@
 #include "api/api.h"
 #include "utils/utils.h"
 #include <cJSON.h>
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -19,12 +18,12 @@ int cfg_read_video(cJSON *VideoObjIn)
     if (VideoObjIn == NULL) {
         root = cJSON_Parse(account->config_str);
         if (root == NULL) {
-            fprintf(stderr, "Failed to parse %s\n", account->config_path);
+            error("Failed to parse %s", account->config_path);
             goto end;
         }
         VideoObj = cJSON_GetObjectItemCaseSensitive(root, "Require");
         if (VideoObj == NULL) {
-            fprintf(stderr, "Error: Failed to parse Require\n");
+            error("Failed to parse Require");
             err = 3;
             goto end;
         }
@@ -53,17 +52,15 @@ int cfg_read_video(cJSON *VideoObjIn)
         cJSON *coding = cJSON_GetObjectItemCaseSensitive(require, "coding");
         if (Bvid == NULL || part == NULL || mode == NULL || qn == NULL ||
             audio == NULL || coding == NULL) {
-            fprintf(stderr, "Error: (line(req): %d) Found a NULL value\n",
-                    index + 1);
+            error("(line(req): %d) Found a NULL value", index + 1);
             err = 3;
             goto end;
         }
         if (!cJSON_IsString(Bvid) || !cJSON_IsNumber(mode) ||
             !cJSON_IsString(qn) || !cJSON_IsString(audio) ||
             !cJSON_IsString(coding)) {
-            fprintf(stderr,
-                    "Error: (line(req): %d) Found a value with invalid type\n",
-                    index + 1);
+            error("(line(req): %d) Found a value with invalid type\n",
+                  index + 1);
             err = 3;
             goto end;
         }
@@ -87,9 +84,8 @@ int cfg_read_video(cJSON *VideoObjIn)
         for (int i = 0; i < size; i++) {
             cJSON *part_item = cJSON_GetArrayItem(part, i);
             if (part_item == NULL || !cJSON_IsNumber(part_item)) {
-                fprintf(stderr,
-                        "Error: (line(part): %d item: %d) Failed to get part\n",
-                        index + 1, i);
+                error("(line(part): %d item: %d) Failed to get part\n",
+                      index + 1, i);
                 err = 3;
                 goto end;
             }

@@ -6,21 +6,22 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <utils/utils.h>
 
 int api_video_merge(char *filename_video, char *filename_audio, char *outdir,
                     char *outname, char *outcid)
 {
-    fprintf(stderr, "INFO: Merging video and audio\n");
+    info("Merging video and audio");
 
     // 创建音频&视频上下文
     AVFormatContext *a_pFormatContext = avformat_alloc_context();
     if (!a_pFormatContext) {
-        fprintf(stderr, "Error: Failed to alloc memory for a_pFormatContext\n");
+        error("Failed to alloc memory for a_pFormatContext");
         return -1;
     }
     AVFormatContext *v_pFormatContext = avformat_alloc_context();
     if (!v_pFormatContext) {
-        fprintf(stderr, "Error: Failed to alloc memory for v_pFormatContext\n");
+        error("Failed to alloc memory for v_pFormatContext");
         return -1;
     }
     // 创建输出上下文
@@ -33,22 +34,22 @@ int api_video_merge(char *filename_video, char *filename_audio, char *outdir,
     // 打开媒体文件
     if (avformat_open_input(&a_pFormatContext, filename_audio, NULL, NULL) !=
         0) {
-        fprintf(stderr, "Error: Failed to open %s\n", filename_audio);
+        error("Failed to open %s", filename_audio);
         return -1;
     }
     if (avformat_open_input(&v_pFormatContext, filename_video, NULL, NULL) !=
         0) {
-        fprintf(stderr, "Error: Failed to open %s\n", filename_video);
+        error("Failed to open %s", filename_video);
         return -1;
     }
 
     // 读取流信息
     if (avformat_find_stream_info(a_pFormatContext, NULL) < 0) {
-        fprintf(stderr, "Error: Failed to get a_pFormaContext(stream)info\n");
+        error("Failed to get a_pFormaContext(stream)info");
         return -1;
     }
     if (avformat_find_stream_info(v_pFormatContext, NULL) < 0) {
-        fprintf(stderr, "Error: Failed to get v_pFormaContext(stream)info\n");
+        error("Failed to get v_pFormaContext(stream)info");
         return -1;
     }
 
@@ -65,7 +66,7 @@ int api_video_merge(char *filename_video, char *filename_audio, char *outdir,
 
     avio_open(&out_ctx->pb, out_path, AVIO_FLAG_WRITE);
     if (avformat_write_header(out_ctx, NULL) != 0) {
-        fprintf(stderr, "Error: Failed to write header\n");
+        error("Failed to write header");
     }
 
     AVPacket *pkt_v = av_packet_alloc();
