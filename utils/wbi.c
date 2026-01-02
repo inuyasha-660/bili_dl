@@ -31,19 +31,19 @@ int api_wbi_padding(Buffer *buffer_wbi)
     cJSON *root = cJSON_Parse(buffer_wbi->buffer);
     if (root == NULL) {
         error("Failed to parse root");
-        err = 1;
+        err = PARSE;
         goto end;
     }
     cJSON *data = cJSON_GetObjectItemCaseSensitive(root, "data");
     if (data == NULL) {
         error("Failed to parse data");
-        err = 1;
+        err = PARSE;
         goto end;
     }
     cJSON *wbi_img = cJSON_GetObjectItemCaseSensitive(data, "wbi_img");
     if (wbi_img == NULL) {
         error("Failed to parse wbi_img");
-        err = 1;
+        err = PARSE;
         goto end;
     }
 
@@ -51,12 +51,12 @@ int api_wbi_padding(Buffer *buffer_wbi)
     cJSON *sub_url = cJSON_GetObjectItemCaseSensitive(wbi_img, "img_url");
     if (img_url == NULL || sub_url == NULL) {
         error("img_url || sub_url is NULL");
-        err = 1;
+        err = PARSE;
         goto end;
     }
     if (!cJSON_IsString(img_url) || !cJSON_IsString(sub_url)) {
         error("img_url || sub_url is not string");
-        err = 1;
+        err = PARSE;
         goto end;
     }
     wbi->img_key = strdup(img_url->valuestring);
@@ -93,7 +93,7 @@ int api_get_wbi_key()
 
     } else {
         error("Failed to initialize curl");
-        err = 1;
+        err = INITE;
     }
 
 end:

@@ -34,20 +34,20 @@ int main(int argc, char *argv[])
 {
     if (argc != 2) {
         error("Error: Wrong number of arguments(%d)\n", argc - 1);
-        return 1;
+        return INE;
     }
     printf("bili_dl[%s]\n", VERSION_APP);
 
     info("Initialize and read configuration");
     if (init() != 0) {
         error("Exit with initialization error");
-        return 1;
+        return INITE;
     }
     account->config_path = strdup(argv[1]);
 
     if (cfg_read_global() != 0) {
         error("Exit with reading configuration error");
-        return 1;
+        return PARSE;
     }
 
     printf("\nIN: %s OUT: %s\n", argv[1], account->Output);
@@ -85,7 +85,7 @@ int main(int argc, char *argv[])
     }
     default: {
         error("Invalid type: %d", account->Type);
-        return 1;
+        return INE;
     }
     }
 

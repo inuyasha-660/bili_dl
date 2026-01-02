@@ -77,43 +77,43 @@ int api_dl_video_get_file(Buffer *buffer, int idx_v, int idx_p,
     char *url_audio = NULL;
     cJSON *root = cJSON_Parse(buffer->buffer);
     if (root == NULL) {
-        err_parse = 1;
+        err_parse = PARSE;
         error("Failed to parse stream json");
         goto end;
     }
     cJSON *code = cJSON_GetObjectItemCaseSensitive(root, "code");
     if (code == NULL || !cJSON_IsNumber(code)) {
-        err_parse = 1;
+        err_parse = PARSE;
         error("Failed to parse code");
         goto end;
     }
     if (code->valueint != 0) {
-        err_parse = 1;
+        err_parse = PARSE;
         error("Request error: %d", code->valueint);
         goto end;
     }
 
     cJSON *data = cJSON_GetObjectItemCaseSensitive(root, "data");
     if (data == NULL) {
-        err_parse = 1;
+        err_parse = PARSE;
         error("Failed to parse data");
         goto end;
     }
     cJSON *dash = cJSON_GetObjectItemCaseSensitive(data, "dash");
     if (dash == NULL) {
-        err_parse = 1;
+        err_parse = PARSE;
         error("Failed to get data::dash");
         goto end;
     }
     cJSON *Videos = cJSON_GetObjectItemCaseSensitive(dash, "video");
     if (Videos == NULL) {
-        err_parse = 1;
+        err_parse = PARSE;
         error("Failed to get dash::video");
         goto end;
     }
     cJSON *Audios = cJSON_GetObjectItemCaseSensitive(dash, "audio");
     if (Audios == NULL) {
-        err_parse = 1;
+        err_parse = PARSE;
         error("Failed to get dash::audio");
         goto end;
     }
@@ -130,7 +130,7 @@ int api_dl_video_get_file(Buffer *buffer, int idx_v, int idx_p,
         cJSON *id = cJSON_GetObjectItemCaseSensitive(video, "id");
         if (id == NULL || !cJSON_IsNumber(id)) {
             error("id(video) is NULL");
-            err_parse = 2;
+            err_parse = PARSE;
             goto end;
         }
         char *id_str = int_to_str(id->valueint);
@@ -206,7 +206,7 @@ int api_dl_video_get_file(Buffer *buffer, int idx_v, int idx_p,
         cJSON *baseUrl = cJSON_GetObjectItemCaseSensitive(audio, "baseUrl");
         if (baseUrl == NULL || !cJSON_IsString(baseUrl)) {
             error("baseUrl(audio) is NULL");
-            err_parse = 3;
+            err_parse = PARSE;
             free(audio_t);
             goto end;
         }
@@ -390,13 +390,13 @@ int api_dl_video_get_cid(char *buffer, struct Part *ret)
     cJSON *root = cJSON_Parse(buffer);
     if (root == NULL) {
         error("Failed to parse json::cid");
-        err_get = -1;
+        err_get = PARSE;
         goto end;
     }
     cJSON *data = cJSON_GetObjectItemCaseSensitive(root, "data");
     if (data == NULL) {
         error("Failed to get data from cid::data");
-        err_get = -1;
+        err_get = PARSE;
         goto end;
     }
     cJSON *parts;
@@ -406,26 +406,26 @@ int api_dl_video_get_cid(char *buffer, struct Part *ret)
         cJSON *cid = cJSON_GetObjectItemCaseSensitive(parts, "cid");
         if (cid == NULL || !cJSON_IsNumber(cid)) {
             error("Failed to read cid from data::cid");
-            err_get = -1;
+            err_get = PARSE;
             goto end;
         }
         cJSON *part = cJSON_GetObjectItemCaseSensitive(parts, "part");
         if (part == NULL || !cJSON_IsString(part)) {
             error("Failed to read part from data::part");
-            err_get = -1;
+            err_get = PARSE;
             goto end;
         }
 
         ret->cid = (char **)realloc(ret->cid, (index + 1) * sizeof(char *));
         if (ret->cid == NULL) {
             error("Failed to realloc cid array");
-            err_get = -1;
+            err_get = PARSE;
             goto end;
         }
         ret->part = (char **)realloc(ret->part, (index + 1) * sizeof(char *));
         if (ret->part == NULL) {
             error("Failed to realloc part array");
-            err_get = -1;
+            err_get = PARSE;
             goto end;
         }
 
@@ -516,7 +516,7 @@ int api_dl_video_init()
 {
     int err = 0;
     if (api_get_wbi_key() != 0) {
-        err = 1;
+        err = CALLE;
         return err;
     }
     threadpool thpool_dl = thpool_init(account->MaxThread);

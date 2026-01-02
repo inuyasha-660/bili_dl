@@ -10,12 +10,12 @@ int cfg_read_global()
 {
     if (!is_file_exists(account->config_path)) {
         error("%s not found", account->config_path);
-        return -1;
+        return FE_OP;
     }
     char *config = read_file(account->config_path);
     if (config == NULL) {
         error("%s is NULL", account->config_path);
-        return -1;
+        return TYPEE;
     }
     account->config_str = strdup(config);
 
@@ -23,37 +23,37 @@ int cfg_read_global()
     cJSON *root = cJSON_Parse(config);
     if (root == NULL) {
         error("Fail to parse %s", account->config_path);
-        err = 1;
+        err = PARSE;
         goto end;
     }
     cJSON *SESSDATA = cJSON_GetObjectItemCaseSensitive(root, "SESSDATA");
     if (SESSDATA == NULL || SESSDATA->valuestring == NULL) {
         error("SESSDATA is NULL");
-        err = 1;
+        err = PARSE;
         goto end;
     }
     cJSON *MaxThread = cJSON_GetObjectItemCaseSensitive(root, "MaxThread");
     if (MaxThread == NULL || !cJSON_IsNumber(MaxThread)) {
         error("MaxThread is NaN");
-        err = 1;
+        err = PARSE;
         goto end;
     }
     cJSON *Type = cJSON_GetObjectItemCaseSensitive(root, "Type");
     if (Type == NULL || !cJSON_IsNumber(Type)) {
         error("Type is NULL");
-        err = 1;
+        err = PARSE;
         goto end;
     }
     cJSON *Output = cJSON_GetObjectItemCaseSensitive(root, "Output");
     if (Output == NULL || Output->valuestring == NULL) {
         error("Output is NULL");
-        err = 1;
+        err = PARSE;
         goto end;
     }
     cJSON *Requires = cJSON_GetObjectItemCaseSensitive(root, "Require");
     if (Requires == NULL) {
         error("Require is NULL");
-        err = 1;
+        err = PARSE;
         goto end;
     }
 

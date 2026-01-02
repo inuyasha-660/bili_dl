@@ -14,14 +14,14 @@ int cfg_read_folder()
     cJSON *root = cJSON_Parse(account->config_str);
     if (root == NULL) {
         error(" Failed to parse %s", account->config_path);
-        err = 3;
+        err = PARSE;
         goto end;
     }
 
     cJSON *Require = cJSON_GetObjectItemCaseSensitive(root, "Require");
     if (Require == NULL) {
         error("Failed to parse Require");
-        err = 3;
+        err = PARSE;
         goto end;
     }
 
@@ -49,13 +49,13 @@ int cfg_read_folder()
     if (fid == NULL || mode == NULL || qn == NULL || audio == NULL ||
         coding == NULL) {
         error("Found a NULL value");
-        err = 3;
+        err = PARSE;
         goto end;
     }
     if (!cJSON_IsString(fid) || !cJSON_IsNumber(mode) || !cJSON_IsString(qn) ||
         !cJSON_IsString(audio) || !cJSON_IsString(coding)) {
         error("Found a value with invalid type");
-        err = 3;
+        err = PARSE;
         goto end;
     }
 
@@ -71,7 +71,7 @@ int cfg_read_folder()
 
     Buffer *buffer_f = api_get_folder_ctn_json();
     if (buffer_f->buffer == NULL) {
-        err = 3;
+        err = DLE_REQ;
         error("Failed to get folder json");
         goto end;
     }
@@ -79,13 +79,13 @@ int cfg_read_folder()
     cJSON *root_f = cJSON_Parse(buffer_f->buffer);
     if (root_f == NULL) {
         error(" Failed to parse root_f");
-        err = 3;
+        err = PARSE;
         goto free_buffer;
     }
     cJSON *data = cJSON_GetObjectItemCaseSensitive(root_f, "data");
     if (data == NULL) {
         error("Failed to parse data");
-        err = 3;
+        err = PARSE;
         goto free_buffer;
     }
 
@@ -97,7 +97,7 @@ int cfg_read_folder()
         cJSON *bvid = cJSON_GetObjectItemCaseSensitive(videoobj, "bvid");
         if (bvid == NULL || !cJSON_IsString(bvid)) {
             error("Failed to parse videoobj");
-            err = 3;
+            err = PARSE;
             goto free_buffer;
         }
 

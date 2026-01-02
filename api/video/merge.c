@@ -17,12 +17,12 @@ int api_video_merge(char *filename_video, char *filename_audio, char *outdir,
     AVFormatContext *a_pFormatContext = avformat_alloc_context();
     if (!a_pFormatContext) {
         error("Failed to alloc memory for a_pFormatContext");
-        return -1;
+        return CALLE;
     }
     AVFormatContext *v_pFormatContext = avformat_alloc_context();
     if (!v_pFormatContext) {
         error("Failed to alloc memory for v_pFormatContext");
-        return -1;
+        return CALLE;
     }
     // 创建输出上下文
     AVFormatContext *out_ctx = NULL;
@@ -35,22 +35,22 @@ int api_video_merge(char *filename_video, char *filename_audio, char *outdir,
     if (avformat_open_input(&a_pFormatContext, filename_audio, NULL, NULL) !=
         0) {
         error("Failed to open %s", filename_audio);
-        return -1;
+        return FE_OP;
     }
     if (avformat_open_input(&v_pFormatContext, filename_video, NULL, NULL) !=
         0) {
         error("Failed to open %s", filename_video);
-        return -1;
+        return FE_OP;
     }
 
     // 读取流信息
     if (avformat_find_stream_info(a_pFormatContext, NULL) < 0) {
         error("Failed to get a_pFormaContext(stream)info");
-        return -1;
+        return CALLE;
     }
     if (avformat_find_stream_info(v_pFormatContext, NULL) < 0) {
         error("Failed to get v_pFormaContext(stream)info");
-        return -1;
+        return CALLE;
     }
 
     // 创建输出流
@@ -67,6 +67,7 @@ int api_video_merge(char *filename_video, char *filename_audio, char *outdir,
     avio_open(&out_ctx->pb, out_path, AVIO_FLAG_WRITE);
     if (avformat_write_header(out_ctx, NULL) != 0) {
         error("Failed to write header");
+        return FE_OP;
     }
 
     AVPacket *pkt_v = av_packet_alloc();
