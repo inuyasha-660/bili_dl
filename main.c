@@ -23,8 +23,7 @@ int init()
 
     int curl_err = curl_global_init(CURL_GLOBAL_DEFAULT);
     if (curl_err != 0) {
-        error("Error: Fail to initialize curl: %s",
-              curl_easy_strerror(curl_err));
+        error("Fail to initialize curl: %s", curl_easy_strerror(curl_err));
         return curl_err;
     }
 
@@ -34,7 +33,7 @@ int init()
 int main(int argc, char *argv[])
 {
     if (argc != 2) {
-        fprintf(stderr, "Error: Wrong number of arguments(%d)\n", argc - 1);
+        error("Error: Wrong number of arguments(%d)\n", argc - 1);
         return 1;
     }
     printf("bili_dl[%s]\n", VERSION_APP);
@@ -63,7 +62,7 @@ int main(int argc, char *argv[])
     switch (account->Type) {
     case 1: {
         if (cfg_read_video(NULL) != 0) {
-            error("Error: Failed to read %s", argv[1]);
+            error("Failed to read %s", argv[1]);
             break;
         }
         err_perform = api_dl_video_init();
@@ -71,14 +70,21 @@ int main(int argc, char *argv[])
     }
     case 2: {
         if (cfg_read_folder() != 0) {
-            error("Error: Failed to read %s", argv[1]);
+            error("Failed to read %s", argv[1]);
             break;
         }
         err_perform = api_dl_folder_init();
         break;
     }
+    case 3: {
+        if (cfg_read_anime() != 0) {
+            error("Failed to read %s", argv[1]);
+            break;
+        }
+        break;
+    }
     default: {
-        error("Error: Invalid type: %d", account->Type);
+        error("Invalid type: %d", account->Type);
         return 1;
     }
     }

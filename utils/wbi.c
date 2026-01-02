@@ -1,12 +1,19 @@
 #include "api/api.h"
+#include "cJSON.h"
 #include "libs/md5.h"
 #include "utils.h"
+#include <curl/curl.h>
+#include <curl/easy.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
 
 struct Wbi *wbi;
+extern struct Account *account;
+
+// 获得用户基本信息，包含 img_url、sub_url
+const char *API_LOGIN_INFO_NAV = "https://api.bilibili.com/x/web-interface/nav";
 
 const int MIXIN_KEY_ENC_TAB[64] = {
     46, 47, 18, 2,  53, 8,  23, 32, 15, 50, 10, 31, 58, 3,  45, 35,
@@ -14,9 +21,82 @@ const int MIXIN_KEY_ENC_TAB[64] = {
     37, 48, 7,  16, 24, 55, 40, 61, 26, 17, 0,  1,  60, 51, 30, 4,
     22, 25, 54, 21, 56, 59, 6,  63, 57, 62, 11, 36, 20, 34, 44, 52};
 
+int api_wbi_padding(Buffer *buffer_wbi)
+{
+    int err = 0;
+    wbi = malloc(sizeof(struct Wbi));
+    wbi->img_key = NULL;
+    wbi->sub_key = NULL;
+
+    cJSON *root = cJSON_Parse(buffer_wbi->buffer);
+    if (root == NULL) {
+        error("Failed to parse root");
+        err = 1;
+        goto end;
+    }
+    cJSON *data = cJSON_GetObjectItemCaseSensitive(root, "data");
+    if (data == NULL) {
+        error("Failed to parse data");
+        err = 1;
+        goto end;
+    }
+    cJSON *wbi_img = cJSON_GetObjectItemCaseSensitive(data, "wbi_img");
+    if (wbi_img == NULL) {
+        error("Failed to parse wbi_img");
+        err = 1;
+        goto end;
+    }
+
+    cJSON *img_url = cJSON_GetObjectItemCaseSensitive(wbi_img, "img_url");
+    cJSON *sub_url = cJSON_GetObjectItemCaseSensitive(wbi_img, "img_url");
+    if (img_url == NULL || sub_url == NULL) {
+        error("img_url || sub_url is NULL");
+        err = 1;
+        goto end;
+    }
+    if (!cJSON_IsString(img_url) || !cJSON_IsString(sub_url)) {
+        error("img_url || sub_url is not string");
+        err = 1;
+        goto end;
+    }
+    wbi->img_key = strdup(img_url->valuestring);
+    wbi->sub_key = strdup(sub_url->valuestring);
+
+end:
+    cJSON_Delete(root);
+    return err;
+}
+
 int api_get_wbi_key()
 {
     int err = 0;
+    CURL *curl = curl_easy_init();
+    if (curl) {
+        CURLcode code;
+        Buffer *buffer_wbi = malloc(sizeof(Buffer));
+        buffer_wbi->buffer = NULL;
+        buffer_wbi->length = 0;
+
+        curl_easy_setopt(curl, CURLOPT_URL, API_LOGIN_INFO_NAV);
+        curl_easy_setopt(curl, CURLOPT_COOKIE, account->cookie);
+        curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, api_curl_finish);
+        curl_easy_setopt(curl, CURLOPT_WRITEDATA, buffer_wbi);
+        code = curl_easy_perform(curl);
+        if (code != CURLE_OK) {
+            error("%s", curl_easy_strerror(code));
+            err = code;
+            goto end;
+        }
+        api_wbi_padding(buffer_wbi);
+        free(buffer_wbi->buffer);
+        free(buffer_wbi);
+
+    } else {
+        error("Failed to initialize curl");
+        err = 1;
+    }
+
+end:
     return err;
 }
 
@@ -30,6 +110,9 @@ int cmp_args(const void *a, const void *b)
 
 char *api_gen_wbi(const char *url_raw)
 {
+    if (wbi->img_key == NULL && wbi->sub_key == NULL)
+        return NULL;
+
     size_t len = strlen(wbi->img_key) + strlen(wbi->sub_key);
     char append[len + 1];
     append[len] = '\0';
@@ -75,12 +158,18 @@ char *api_gen_wbi(const char *url_raw)
 
     for (int i = 0; i < idx; i++) {
         if (i == 0) {
-            sprintf(ret, "%s%s", ret, list_args[i]);
+            char *tmp_ret = strdup(ret);
+            sprintf(ret, "%s%s", tmp_ret, list_args[i]);
+            free(tmp_ret);
             continue;
         }
-        sprintf(ret, "%s&%s", ret, list_args[i]);
+        char *tmp_ret = strdup(ret);
+        sprintf(ret, "%s&%s", tmp_ret, list_args[i]);
+        free(tmp_ret);
     }
+    char *tmp_ret = strdup(ret);
     sprintf(ret, "%s%s", ret, mixin_key);
+    free(tmp_ret);
 
     uint8_t w_rid_raw[16];
     char w_rid[33];

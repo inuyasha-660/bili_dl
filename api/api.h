@@ -37,7 +37,10 @@ int api_video_merge(char *filename_video, char *filename_audio, char *outdir, ch
 Buffer * api_get_folder_ctn_json();
 int cfg_read_folder();
 int api_dl_folder_init();
+int cfg_read_anime();
+int api_get_wbi_key();
 
+extern const char *API_LOGIN_INFO_NAV;
 extern const char *API_VIDEO_PART;
 extern const char *API_VIDEO_STREAM;
 extern const char *API_FOLDER_CTN;

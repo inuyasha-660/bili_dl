@@ -515,6 +515,10 @@ void api_dl_video(void *index_p)
 int api_dl_video_init()
 {
     int err = 0;
+    if (api_get_wbi_key() != 0) {
+        err = 1;
+        return err;
+    }
     threadpool thpool_dl = thpool_init(account->MaxThread);
     pthread_mutex_init(&lock_gl, NULL);
     for (int i = 0; i < video_s->count; i++) {

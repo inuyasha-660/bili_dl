@@ -14,6 +14,8 @@ src = files(
   'api/video/merge.c',
   'api/folder/folder.c',
   'api/folder/configf.c',
+  'api/anime/anime.c',
+  'api/anime/configa.c',
   'libs/thpool.c',
   'libs/md5.c'
   )

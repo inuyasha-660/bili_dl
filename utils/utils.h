@@ -34,5 +34,4 @@ struct Account {
 struct Wbi {
     char *img_key;
     char *sub_key;
-    char mixin_key[33];
 };
