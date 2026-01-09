@@ -60,8 +60,7 @@ int cfg_read_video(cJSON *VideoObjIn)
         if (!cJSON_IsString(Bvid) || !cJSON_IsNumber(mode) ||
             !cJSON_IsString(qn) || !cJSON_IsString(audio) ||
             !cJSON_IsString(coding)) {
-            error("(line(req): %d) Found a value with invalid type\n",
-                  index + 1);
+            error("(line(req): %d) Found a value with invalid type", index + 1);
             err = PARSE;
             goto end;
         }
@@ -85,8 +84,8 @@ int cfg_read_video(cJSON *VideoObjIn)
         for (int i = 0; i < size; i++) {
             cJSON *part_item = cJSON_GetArrayItem(part, i);
             if (part_item == NULL || !cJSON_IsNumber(part_item)) {
-                error("(line(part): %d item: %d) Failed to get part\n",
-                      index + 1, i);
+                error("(line(part): %d item: %d) Failed to get part", index + 1,
+                      i);
                 err = PARSE;
                 goto end;
             }

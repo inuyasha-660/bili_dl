@@ -3,20 +3,16 @@
 
 #define P_ALL 0 // 0: 选中所有分P
 
-// 程序输入错误
-const int INE  = 1;
-// 初始化错误
-const int INITE = 2;
-// 解析错误
-const int PARSE  = 3;
-// 请求错误
-const int DLE_REQ = 4;
-// 文件操作错误
-const int FE_OP = 5;
-// 数据类型错误
-const int TYPEE = 6;
-// 函数调用错误
-const int CALLE = 7;
+// 错误码
+enum {
+    INE = 1, // 输入
+    INITE = 2, // 初始化
+    PARSE  = 3, // 解析
+    DLE_REQ = 4, // 请求
+    FE_OP = 5, // 文件操作
+    TYPEE = 6, // 数据类型
+    CALLE = 7, // 函数调用
+};
 
 int cfg_read_global();
 int is_file_exists(const char *filename);

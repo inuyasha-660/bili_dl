@@ -31,6 +31,21 @@ struct Folder {
     char *coding;
 };
 
+struct Anime {
+    char *id;
+    int *part;
+    int mode;
+    char *qn;
+    char *audio;
+    char *coding;
+};
+
+struct AnimeList {
+    int count;
+    int *cids;
+    char **title;
+};
+
 int api_dl_video_init();
 int cfg_read_video(cJSON *VideoObjIn);
 int api_video_merge(char *filename_video, char *filename_audio, char *outdir, char *outname,  char *outcid);
@@ -38,6 +53,7 @@ Buffer * api_get_folder_ctn_json();
 int cfg_read_folder();
 int api_dl_folder_init();
 int cfg_read_anime();
+int api_anime_init();
 int api_get_wbi_key();
 
 extern const char *API_LOGIN_INFO_NAV;

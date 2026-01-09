@@ -168,7 +168,7 @@ char *api_gen_wbi(const char *url_raw)
         free(tmp_ret);
     }
     char *tmp_ret = strdup(ret);
-    sprintf(ret, "%s%s", ret, mixin_key);
+    sprintf(ret, "%s%s", tmp_ret, mixin_key);
     free(tmp_ret);
 
     uint8_t w_rid_raw[16];

@@ -81,6 +81,7 @@ int main(int argc, char *argv[])
             error("Failed to read %s", argv[1]);
             break;
         }
+        err_perform = api_anime_init();
         break;
     }
     default: {
