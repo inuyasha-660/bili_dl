@@ -36,7 +36,6 @@ struct Anime {
     int *part;
     int mode;
     char *qn;
-    char *audio;
     char *coding;
 };
 
@@ -52,6 +51,7 @@ int api_video_merge(char *filename_video, char *filename_audio, char *outdir, ch
 Buffer * api_get_folder_ctn_json();
 int cfg_read_folder();
 int api_dl_folder_init();
+int api_dl_file(char *url, char *filename);
 int cfg_read_anime();
 int api_anime_init();
 int api_get_wbi_key();
@@ -60,3 +60,4 @@ extern const char *API_LOGIN_INFO_NAV;
 extern const char *API_VIDEO_PART;
 extern const char *API_VIDEO_STREAM;
 extern const char *API_FOLDER_CTN;
+extern const char *API_ANIME_GET_STREAM;

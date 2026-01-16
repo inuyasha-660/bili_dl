@@ -19,13 +19,13 @@ int cfg_read_video(cJSON *VideoObjIn)
         root = cJSON_Parse(account->config_str);
         if (root == NULL) {
             error("Failed to parse %s", account->config_path);
-            err = PARSE;
+            err = ERR_PARSE;
             goto end;
         }
         VideoObj = cJSON_GetObjectItemCaseSensitive(root, "Require");
         if (VideoObj == NULL) {
             error("Failed to parse Require");
-            err = PARSE;
+            err = ERR_PARSE;
             goto end;
         }
     } else {
@@ -54,14 +54,14 @@ int cfg_read_video(cJSON *VideoObjIn)
         if (Bvid == NULL || part == NULL || mode == NULL || qn == NULL ||
             audio == NULL || coding == NULL) {
             error("(line(req): %d) Found a NULL value", index + 1);
-            err = PARSE;
+            err = ERR_PARSE;
             goto end;
         }
         if (!cJSON_IsString(Bvid) || !cJSON_IsNumber(mode) ||
             !cJSON_IsString(qn) || !cJSON_IsString(audio) ||
             !cJSON_IsString(coding)) {
             error("(line(req): %d) Found a value with invalid type", index + 1);
-            err = PARSE;
+            err = ERR_PARSE;
             goto end;
         }
 
@@ -86,7 +86,7 @@ int cfg_read_video(cJSON *VideoObjIn)
             if (part_item == NULL || !cJSON_IsNumber(part_item)) {
                 error("(line(part): %d item: %d) Failed to get part", index + 1,
                       i);
-                err = PARSE;
+                err = ERR_PARSE;
                 goto end;
             }
 

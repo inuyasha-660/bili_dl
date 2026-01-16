@@ -1,5 +1,9 @@
 project('bili_dl', 'c')
 
+meta_data = configuration_data()
+meta_data.set('version', '0.2.0')
+configure_file(input: 'metadata.h.in', output: 'metadata.h', configuration: meta_data)
+
 deps = [dependency('libcjson'), dependency('libcurl')]
 depsffmpeg = [dependency('libavcodec'), dependency('libavformat'), dependency('libavutil')]
 

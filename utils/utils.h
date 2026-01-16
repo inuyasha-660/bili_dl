@@ -3,15 +3,14 @@
 
 #define P_ALL 0 // 0: 选中所有分P
 
-// 错误码
 enum {
-    INE = 1, // 输入
-    INITE = 2, // 初始化
-    PARSE  = 3, // 解析
-    DLE_REQ = 4, // 请求
-    FE_OP = 5, // 文件操作
-    TYPEE = 6, // 数据类型
-    CALLE = 7, // 函数调用
+    ERR_INPUT = 1, // 输入
+    ERR_INIT = 2, // 初始化
+    ERR_PARSE  = 3, // 解析
+    ERR_REQ = 4, // 请求
+    ERR_FOP = 5, // 文件操作
+    ERR_TYPE = 6, // 数据类型
+    ERR_CALL = 7, // 函数调用
 };
 
 int cfg_read_global();

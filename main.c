@@ -1,12 +1,11 @@
 #include "api/api.h"
+#include "metadata.h"
 #include "utils/utils.h"
 #include <curl/curl.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <wchar.h>
-
-#define VERSION_APP "0.1.2"
 
 struct Account *account;
 
@@ -34,20 +33,20 @@ int main(int argc, char *argv[])
 {
     if (argc != 2) {
         error("Error: Wrong number of arguments(%d)\n", argc - 1);
-        return INE;
+        return ERR_INPUT;
     }
-    printf("bili_dl[%s]\n", VERSION_APP);
+    printf("bili_dl[%s]\n", VERSION);
 
     info("Initialize and read configuration");
     if (init() != 0) {
         error("Exit with initialization error");
-        return INITE;
+        return ERR_INIT;
     }
     account->config_path = strdup(argv[1]);
 
     if (cfg_read_global() != 0) {
         error("Exit with reading configuration error");
-        return PARSE;
+        return ERR_PARSE;
     }
 
     printf("\nIN: %s OUT: %s\n", argv[1], account->Output);
@@ -86,7 +85,7 @@ int main(int argc, char *argv[])
     }
     default: {
         error("Invalid type: %d", account->Type);
-        return INE;
+        return ERR_TYPE;
     }
     }
 
