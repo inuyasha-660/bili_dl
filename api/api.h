@@ -1,6 +1,10 @@
 #include <stddef.h>
 #include <cJSON.h>
+
 #define END_P -1
+#define _USERAGENT                                                             \
+    "Mozilla/5.0 (X11; Linux x86_64; rv:146.0) Gecko/20100101 Firefox/146.0"
+#define _REFERER "https://www.bilibili.com"
 
 typedef struct {
     char *buffer;
@@ -55,6 +59,7 @@ int api_dl_file(char *url, char *filename);
 int cfg_read_anime();
 int api_anime_init();
 int api_get_wbi_key();
+int create_outdir(char *dirname);
 
 extern const char *API_LOGIN_INFO_NAV;
 extern const char *API_VIDEO_PART;

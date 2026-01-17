@@ -1,9 +1,11 @@
 #include "utils/utils.h"
 #include "api/api.h"
 #include <dirent.h>
+#include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/stat.h>
 
 int is_file_exists(const char *filename)
 {
@@ -14,6 +16,20 @@ int is_file_exists(const char *filename)
     } else {
         return 0;
     }
+}
+
+int create_outdir(char *dirname)
+{
+    if (!is_dir_exist(dirname)) {
+        int err_mk = mkdir(dirname, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+        if (err_mk != 0) {
+            char *err_s = strerror(errno);
+            error("%s", err_s);
+            free(err_s);
+            return err_mk;
+        }
+    }
+    return 0;
 }
 
 int is_dir_exist(char *dir)

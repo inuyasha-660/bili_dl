@@ -3,17 +3,12 @@
 #include "utils/utils.h"
 #include <cJSON.h>
 #include <curl/curl.h>
-#include <errno.h>
 #include <pthread.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
-
-#define _USERAGENT                                                             \
-    "Mozilla/5.0 (X11; Linux x86_64; rv:146.0) Gecko/20100101 Firefox/146.0"
-#define _REFERER "https://www.bilibili.com"
 
 extern struct Account *account;
 struct Video *video_s;
@@ -230,18 +225,24 @@ int api_dl_video_get_file(Buffer *buffer, int idx_v, int idx_p,
     char *outname = strdup(part->part[idx_p]);
     char *outcid = strdup(part->cid[idx_p]);
 
-    if (!is_dir_exist(account->Output)) {
-        int err_mk =
-            mkdir(account->Output, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
-        if (err_mk != 0) {
-            char *err_s = strerror(errno);
-            error("%s", err_s);
-            free(err_s);
-            err_parse = err_mk;
-            pthread_mutex_unlock(&lock_gl);
-            goto end;
-        }
+    if (create_outdir(account->Output) != 0) {
+        pthread_mutex_unlock(&lock_gl);
+        goto end;
     }
+
+    // if (!is_dir_exist(account->Output)) {
+    //     int err_mk =
+    //         mkdir(account->Output, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+    //     if (err_mk != 0) {
+    //         char *err_s = strerror(errno);
+    //         error("%s", err_s);
+    //         free(err_s);
+    //         err_parse = err_mk;
+    //         pthread_mutex_unlock(&lock_gl);
+    //         goto end;
+    //     }
+    // }
+
     // 创建视频文件
     size_t len_video =
         snprintf(NULL, 0, "%s/%s-%s-video.m4s", outdir, outcid, outname);
