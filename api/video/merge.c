@@ -58,11 +58,13 @@ int api_video_merge(char *filename_video, char *filename_audio, char *outdir,
     avcodec_parameters_copy(out_v_stream->codecpar,
                             v_pFormatContext->streams[0]->codecpar);
     out_v_stream->codecpar->codec_tag = 0;
+    out_v_stream->time_base = v_pFormatContext->streams[0]->time_base;
 
     AVStream *out_a_stream = avformat_new_stream(out_ctx, NULL);
     avcodec_parameters_copy(out_a_stream->codecpar,
                             a_pFormatContext->streams[0]->codecpar);
     out_a_stream->codecpar->codec_tag = 0;
+    out_a_stream->time_base = a_pFormatContext->streams[0]->time_base;
 
     avio_open(&out_ctx->pb, out_path, AVIO_FLAG_WRITE);
     if (avformat_write_header(out_ctx, NULL) != 0) {
