@@ -17,12 +17,12 @@ void _log(int log_level, const char *func, char *format, ...)
     va_list ap;
     va_start(ap, format);
 
-    pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
-    FILE *out = stdout;
+    pthread_mutex_t lock_log = PTHREAD_MUTEX_INITIALIZER;
+    FILE           *out = stdout;
     if (log_level == 2)
         out = stderr;
 
-    pthread_mutex_lock(&lock);
+    pthread_mutex_lock(&lock_log);
 
     fprintf(out, "[%s%s\x1b[0m](%s%s\x1b[0m) ", LogLevelColor[log_level],
             LogLevelStr[log_level], LogLevelColor[3], func);
@@ -30,5 +30,5 @@ void _log(int log_level, const char *func, char *format, ...)
     fprintf(out, "\n");
     va_end(ap);
 
-    pthread_mutex_unlock(&lock);
+    pthread_mutex_unlock(&lock_log);
 }

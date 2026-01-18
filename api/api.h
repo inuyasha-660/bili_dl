@@ -1,11 +1,20 @@
 #include <stddef.h>
 #include <cJSON.h>
 
+// 哨兵值
 #define END_P -1
+
+// 运行模式
+#define TYPE_BVID 1
+#define TYPE_FOLDER 2
+#define TYPE_ANIME 3
+#define TYPE_END -1
+
 #define _USERAGENT                                                             \
     "Mozilla/5.0 (X11; Linux x86_64; rv:146.0) Gecko/20100101 Firefox/146.0"
 #define _REFERER "https://www.bilibili.com"
 
+// 请求缓存
 typedef struct {
     char *buffer;
     size_t length;
@@ -21,6 +30,7 @@ struct Video {
     char **coding;
 };
 
+// 视频分 P
 struct Part {
     int count;
     char **cid;
@@ -49,17 +59,29 @@ struct AnimeList {
     char **title;
 };
 
+
+// 下载初始化
 int api_dl_video_init();
-int cfg_read_video(cJSON *VideoObjIn);
-int api_video_merge(char *filename_video, char *filename_audio, char *outdir, char *outname,  char *outcid);
-Buffer * api_get_folder_ctn_json();
-int cfg_read_folder();
 int api_dl_folder_init();
-int api_dl_file(char *url, char *filename);
-int cfg_read_anime();
 int api_anime_init();
+
+// 发送请求
+int api_dl_file(char *url, char *filename);
+Buffer * api_get_folder_ctn_json();
 int api_get_wbi_key();
-int create_outdir(char *dirname);
+
+// 进度打印
+void progress_print(int index, int total);
+
+// 读取配置
+int cfg_read_video();
+int cfg_read_videolist(cJSON *VideoObjIn);
+int cfg_read_folder();
+int cfg_read_anime();
+
+// 合并视频
+int api_video_merge(char *filename_video, char *filename_audio, char *outdir, char *outname,  char *outcid);
+
 
 extern const char *API_LOGIN_INFO_NAV;
 extern const char *API_VIDEO_PART;

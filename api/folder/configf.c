@@ -4,13 +4,13 @@
 #include <stdlib.h>
 #include <string.h>
 
-struct Folder *folder;
-extern struct Video *video_s;
+struct Folder         *folder;
+extern struct Video   *video_s;
 extern struct Account *account;
 
 int cfg_read_folder()
 {
-    int err = 0;
+    int    err = 0;
     cJSON *root = cJSON_Parse(account->config_str);
     if (root == NULL) {
         error(" Failed to parse %s", account->config_path);
@@ -61,7 +61,7 @@ int cfg_read_folder()
 
     // 读取 exScept 并填充 video_s
     cJSON *excepts = cJSON_GetObjectItemCaseSensitive(Require, "except");
-    cfg_read_video(excepts);
+    cfg_read_videolist(excepts);
 
     folder->fid = strdup(fid->valuestring);
     folder->qn = strdup(qn->valuestring);
@@ -69,6 +69,7 @@ int cfg_read_folder()
     folder->coding = strdup(coding->valuestring);
     folder->audio = strdup(audio->valuestring);
 
+    // 获取收藏夹信息
     Buffer *buffer_f = api_get_folder_ctn_json();
     if (buffer_f->buffer == NULL) {
         err = ERR_REQ;
@@ -78,25 +79,27 @@ int cfg_read_folder()
 
     cJSON *root_f = cJSON_Parse(buffer_f->buffer);
     if (root_f == NULL) {
-        error(" Failed to parse root_f");
+        error(" Failed to parse folder info(json)");
         err = ERR_PARSE;
         goto free_buffer;
     }
     cJSON *data = cJSON_GetObjectItemCaseSensitive(root_f, "data");
     if (data == NULL) {
-        error("Failed to parse data");
+        error("Failed to parse root_f->data");
         err = ERR_PARSE;
         goto free_buffer;
     }
 
     cJSON *videoobj;
-    int index = video_s->count;
-    int num_except = video_s->count;
+    int    index = video_s->count;
+    int    num_except = video_s->count;
+
+    // 用剩余视频信息填充 video_s
     cJSON_ArrayForEach(videoobj, data)
     {
         cJSON *bvid = cJSON_GetObjectItemCaseSensitive(videoobj, "bvid");
         if (bvid == NULL || !cJSON_IsString(bvid)) {
-            error("Failed to parse videoobj");
+            error("Failed to parse data->videoobj");
             err = ERR_PARSE;
             goto free_buffer;
         }

@@ -9,7 +9,7 @@
 #include <string.h>
 #include <time.h>
 
-struct Wbi *wbi;
+struct Wbi            *wbi;
 extern struct Account *account;
 
 // 获得用户基本信息，包含 img_url、sub_url
@@ -30,13 +30,13 @@ int api_wbi_padding(Buffer *buffer_wbi)
 
     cJSON *root = cJSON_Parse(buffer_wbi->buffer);
     if (root == NULL) {
-        error("Failed to parse root");
+        error("Failed to parse JSON root");
         err = ERR_PARSE;
         goto end;
     }
     cJSON *data = cJSON_GetObjectItemCaseSensitive(root, "data");
     if (data == NULL) {
-        error("Failed to parse data");
+        error("Failed to parse JSON data");
         err = ERR_PARSE;
         goto end;
     }
@@ -50,12 +50,12 @@ int api_wbi_padding(Buffer *buffer_wbi)
     cJSON *img_url = cJSON_GetObjectItemCaseSensitive(wbi_img, "img_url");
     cJSON *sub_url = cJSON_GetObjectItemCaseSensitive(wbi_img, "img_url");
     if (img_url == NULL || sub_url == NULL) {
-        error("img_url || sub_url is NULL");
+        error("img_url or sub_url is null");
         err = ERR_PARSE;
         goto end;
     }
     if (!cJSON_IsString(img_url) || !cJSON_IsString(sub_url)) {
-        error("img_url || sub_url is not string");
+        error("img_url or sub_url is not a string");
         err = ERR_PARSE;
         goto end;
     }
@@ -69,11 +69,11 @@ end:
 
 int api_get_wbi_key()
 {
-    int err = 0;
+    int   err = 0;
     CURL *curl = curl_easy_init();
     if (curl) {
         CURLcode code;
-        Buffer *buffer_wbi = malloc(sizeof(Buffer));
+        Buffer  *buffer_wbi = malloc(sizeof(Buffer));
         buffer_wbi->buffer = NULL;
         buffer_wbi->length = 0;
 
@@ -113,10 +113,10 @@ char *api_gen_wbi(const char *url_raw)
     if (wbi->img_key == NULL && wbi->sub_key == NULL)
         return NULL;
 
-    size_t len = strlen(wbi->img_key) + strlen(wbi->sub_key);
-    char append[len + 1];
-    append[len] = '\0';
-    snprintf(append, len, "%s%s", wbi->img_key, wbi->sub_key);
+    size_t len_total = strlen(wbi->img_key) + strlen(wbi->sub_key);
+    char   append[len_total + 1];
+    append[len_total] = '\0';
+    snprintf(append, len_total + 1, "%s%s", wbi->img_key, wbi->sub_key);
 
     char mixin_key[33];
     mixin_key[32] = '\0';
@@ -127,11 +127,11 @@ char *api_gen_wbi(const char *url_raw)
     time_t wts;
     time(&wts);
 
-    char *url_bak = strdup(url_raw);
+    char  *url_bak = strdup(url_raw);
     char **list_args = NULL;
-    char *url_base = strtok(url_bak, "?");
-    char *arg;
-    int idx = 0;
+    char  *url_base = strtok(url_bak, "?");
+    char  *arg;
+    int    idx = 0;
     while ((arg = strtok(NULL, "&"))) {
         list_args = (char **)realloc(list_args, (idx + 1) * sizeof(char *));
         list_args[idx] = NULL;
@@ -139,7 +139,7 @@ char *api_gen_wbi(const char *url_raw)
         idx++;
     }
 
-    char *wts_str = int_to_str(wts);
+    char  *wts_str = int_to_str(wts);
     size_t len_wts = strlen(wts_str);
 
     list_args = (char **)realloc(list_args, (idx + 1) * sizeof(char *));
@@ -152,7 +152,7 @@ char *api_gen_wbi(const char *url_raw)
     qsort(list_args, idx, sizeof(char *), cmp_args);
 
     size_t len_ret = strlen(url_raw) + strlen(mixin_key) + len_wts + 4;
-    char *ret = (char *)malloc(((len_ret + 1) * sizeof(char)));
+    char  *ret = (char *)malloc(((len_ret + 1) * sizeof(char)));
     ret[len_ret] = '\0';
     sprintf(ret, "%s", url_base);
 
@@ -172,7 +172,7 @@ char *api_gen_wbi(const char *url_raw)
     free(tmp_ret);
 
     uint8_t w_rid_raw[16];
-    char w_rid[33];
+    char    w_rid[33];
     w_rid[32] = '\0';
     md5String(ret, w_rid_raw);
 
@@ -181,7 +181,7 @@ char *api_gen_wbi(const char *url_raw)
     }
 
     size_t len_ret_url = strlen(url_raw) + strlen(w_rid) + len_wts + 12;
-    char *ret_url = (char *)malloc((len_ret_url + 1) * sizeof(char));
+    char  *ret_url = (char *)malloc((len_ret_url + 1) * sizeof(char));
 
     ret_url[len_ret_url] = '\0';
     snprintf(ret_url, len_ret_url + 1, "%s&w_rid=%s&wts=%s", url_raw, w_rid,

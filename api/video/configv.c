@@ -4,12 +4,11 @@
 #include <stdlib.h>
 #include <string.h>
 
-extern struct Video *video_s;
-struct Part *partl;
+extern struct Video   *video_s;
 extern struct Account *account;
 
 // 读取 Video 数组， VideoObjIn 应由传入者释放
-int cfg_read_video(cJSON *VideoObjIn)
+int cfg_read_videolist(cJSON *VideoObjIn)
 {
     int err = 0;
 
@@ -24,7 +23,7 @@ int cfg_read_video(cJSON *VideoObjIn)
         }
         VideoObj = cJSON_GetObjectItemCaseSensitive(root, "Require");
         if (VideoObj == NULL) {
-            error("Failed to parse Require");
+            error("Failed to parse required fields");
             err = ERR_PARSE;
             goto end;
         }
@@ -42,7 +41,7 @@ int cfg_read_video(cJSON *VideoObjIn)
     video_s->coding = NULL;
 
     cJSON *require;
-    int index = 0;
+    int    index = 0;
     cJSON_ArrayForEach(require, VideoObj)
     {
         cJSON *Bvid = cJSON_GetObjectItemCaseSensitive(require, "Bvid");
@@ -81,10 +80,11 @@ int cfg_read_video(cJSON *VideoObjIn)
 
         int size = cJSON_GetArraySize(part);
         video_s->part[index] = (int *)malloc((size + 1) * sizeof(int));
+        // 获取分 P 列表
         for (int i = 0; i < size; i++) {
             cJSON *part_item = cJSON_GetArrayItem(part, i);
             if (part_item == NULL || !cJSON_IsNumber(part_item)) {
-                error("(line(part): %d item: %d) Failed to get part", index + 1,
+                error("(line (part): %d, item: %d) Failed to get part", index + 1,
                       i);
                 err = ERR_PARSE;
                 goto end;
@@ -105,8 +105,8 @@ int cfg_read_video(cJSON *VideoObjIn)
     video_s->count = index;
 
 end:
-    if (root != NULL) {
-        cJSON_Delete(root);
-    }
+    cJSON_Delete(root);
     return err;
 }
+
+int cfg_read_video() { return cfg_read_videolist(NULL); }

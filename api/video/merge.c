@@ -11,7 +11,7 @@
 int api_video_merge(char *filename_video, char *filename_audio, char *outdir,
                     char *outname, char *outcid)
 {
-    info("Merging video and audio");
+    info("Merging video and audio streams");
 
     // 创建音频&视频上下文
     AVFormatContext *a_pFormatContext = avformat_alloc_context();
@@ -24,12 +24,15 @@ int api_video_merge(char *filename_video, char *filename_audio, char *outdir,
         error("Failed to alloc memory for v_pFormatContext");
         return ERR_CALL;
     }
+
     // 创建输出上下文
     AVFormatContext *out_ctx = NULL;
-    size_t len = snprintf(NULL, 0, "%s/%s-%s.mp4", outdir, outcid, outname);
-    char *out_path = (char *)malloc((len + 1) * sizeof(char));
-    snprintf(out_path, len + 1, "%s/%s-%s.mp4", outdir, outcid, outname);
-    avformat_alloc_output_context2(&out_ctx, NULL, "mp4", out_path);
+
+    size_t len_out = snprintf(NULL, 0, "%s/%s-%s.mp4", outdir, outcid, outname);
+    char  *path_out = (char *)malloc((len_out + 1) * sizeof(char));
+    snprintf(path_out, len_out + 1, "%s/%s-%s.mp4", outdir, outcid, outname);
+
+    avformat_alloc_output_context2(&out_ctx, NULL, "mp4", path_out);
 
     // 打开媒体文件
     if (avformat_open_input(&a_pFormatContext, filename_audio, NULL, NULL) !=
@@ -53,29 +56,31 @@ int api_video_merge(char *filename_video, char *filename_audio, char *outdir,
         return ERR_CALL;
     }
 
-    // 创建输出流
+    // 创建音频输出流
     AVStream *out_v_stream = avformat_new_stream(out_ctx, NULL);
     avcodec_parameters_copy(out_v_stream->codecpar,
                             v_pFormatContext->streams[0]->codecpar);
     out_v_stream->codecpar->codec_tag = 0;
-    out_v_stream->time_base = v_pFormatContext->streams[0]->time_base;
+    out_v_stream->time_base           = v_pFormatContext->streams[0]->time_base;
 
+    // 创建视频输出流
     AVStream *out_a_stream = avformat_new_stream(out_ctx, NULL);
     avcodec_parameters_copy(out_a_stream->codecpar,
                             a_pFormatContext->streams[0]->codecpar);
     out_a_stream->codecpar->codec_tag = 0;
-    out_a_stream->time_base = a_pFormatContext->streams[0]->time_base;
+    out_a_stream->time_base           = a_pFormatContext->streams[0]->time_base;
 
-    avio_open(&out_ctx->pb, out_path, AVIO_FLAG_WRITE);
+    avio_open(&out_ctx->pb, path_out, AVIO_FLAG_WRITE);
     if (avformat_write_header(out_ctx, NULL) != 0) {
         error("Failed to write header");
         return ERR_FOP;
     }
 
+    // 分配内存
     AVPacket *pkt_v = av_packet_alloc();
-    int ret_v = av_read_frame(v_pFormatContext, pkt_v);
+    int       ret_v = av_read_frame(v_pFormatContext, pkt_v);
     AVPacket *pkt_a = av_packet_alloc();
-    int ret_a = av_read_frame(a_pFormatContext, pkt_a);
+    int       ret_a = av_read_frame(a_pFormatContext, pkt_a);
 
     while (ret_v >= 0 || ret_a >= 0) {
         int write_next = 0;
@@ -90,23 +95,23 @@ int api_video_merge(char *filename_video, char *filename_audio, char *outdir,
             write_next = 0; // 音频
         }
 
-        AVPacket *pkt_w;
+        AVPacket        *pkt_w;
         AVFormatContext *in_ctx;
-        AVStream *in_stream, *out_stream;
-        int *ret_read;
+        AVStream        *in_stream, *out_stream;
+        int             *ret_read;
 
         if (write_next) {
-            pkt_w = pkt_v;
-            in_ctx = v_pFormatContext;
-            in_stream = v_pFormatContext->streams[0];
+            pkt_w      = pkt_v;
+            in_ctx     = v_pFormatContext;
+            in_stream  = v_pFormatContext->streams[0];
             out_stream = out_v_stream;
-            ret_read = &ret_v;
+            ret_read   = &ret_v;
         } else {
-            pkt_w = pkt_a;
-            in_ctx = a_pFormatContext;
-            in_stream = a_pFormatContext->streams[0];
+            pkt_w      = pkt_a;
+            in_ctx     = a_pFormatContext;
+            in_stream  = a_pFormatContext->streams[0];
             out_stream = out_a_stream;
-            ret_read = &ret_a;
+            ret_read   = &ret_a;
         }
 
         av_packet_rescale_ts(pkt_w, in_stream->time_base,
@@ -122,7 +127,7 @@ int api_video_merge(char *filename_video, char *filename_audio, char *outdir,
 
     av_write_trailer(out_ctx);
 
-    free(out_path);
+    free(path_out);
     avio_closep(&out_ctx->pb);
     avformat_free_context(out_ctx);
     avformat_close_input(&v_pFormatContext);

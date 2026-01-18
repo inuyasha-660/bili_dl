@@ -3,8 +3,6 @@
 #include "libs/thpool.h"
 #include "utils/utils.h"
 #include <curl/curl.h>
-#include <curl/easy.h>
-#include <iso646.h>
 #include <pthread.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -19,9 +17,9 @@ const char *API_ANIME_GET_INFO =
 const char *API_ANIME_GET_STREAM =
     "https://api.bilibili.com/pgc/player/web/playurl";
 extern struct Account *account;
-extern struct Anime *anime;
-struct AnimeList *anime_list;
-static pthread_mutex_t lock_gl;
+extern struct Anime   *anime;
+struct AnimeList      *anime_list;
+static pthread_mutex_t lock_anime;
 
 /*
   'accept_quality' 数组包含所有支持的画质，倒序排列
@@ -34,14 +32,16 @@ static pthread_mutex_t lock_gl;
 int api_anime_parse_stream(Buffer *buffer_stream, int idx_c)
 {
     int err = 0;
-    pthread_mutex_lock(&lock_gl);
-    int mode = anime->mode;
+
+    // 复制目标番剧信息
+    pthread_mutex_lock(&lock_anime);
+    int   mode = anime->mode;
     char *outdir = strdup(account->Output);
-    int cid = anime_list->cids[idx_c];
+    int   cid = anime_list->cids[idx_c];
     char *target_qa = strdup(anime->qn);
     char *target_code = strdup(anime->coding);
     char *title = strdup(anime_list->title[idx_c]);
-    pthread_mutex_unlock(&lock_gl);
+    pthread_mutex_unlock(&lock_anime);
 
     cJSON *root = cJSON_Parse(buffer_stream->buffer);
     if (root == NULL) {
@@ -68,6 +68,7 @@ int api_anime_parse_stream(Buffer *buffer_stream, int idx_c)
     if (!strcmp(target_qa, "*"))
         goto get_video;
 
+    // 筛选目标画质
     for (idx_qa = 0; idx_qa < size_qa; idx_qa++) {
         cJSON *qa = cJSON_GetArrayItem(accept_quality, idx_qa);
         if (qa == NULL || !cJSON_IsNumber(qa)) {
@@ -99,6 +100,7 @@ get_video: {
     }
 
     cJSON *video;
+    // 筛选目标编码
     for (int i = 0; i < 2; i++) {
         video = cJSON_GetArrayItem(video_arr, (idx_qa + i));
         if (video == NULL) {
@@ -121,6 +123,7 @@ get_video: {
     error("coding %s not found", target_code);
     err = ERR_PARSE;
 
+    // 获取视频流链接
     char *url_video = NULL;
 get_video_url: {
     cJSON *backupUrl = cJSON_GetObjectItemCaseSensitive(video, "backupUrl");
@@ -138,6 +141,7 @@ get_video_url: {
     url_video = strdup(url_video_j->valuestring);
 }
 
+    // 获取音频流链接
     cJSON *audio_arr = cJSON_GetObjectItemCaseSensitive(dash, "audio");
     if (audio_arr == NULL) {
         error("Failed to get dash->audio");
@@ -159,6 +163,7 @@ get_video_url: {
     }
     cJSON *url_audio_j = cJSON_GetArrayItem(backupUrl_audio, 0);
 
+    // 生成音频文件名
     size_t filename_audio_len =
         snprintf(NULL, 0, "%s/%d-%s-audio.m4s", outdir, cid, title);
     char *filename_audio_str =
@@ -166,6 +171,7 @@ get_video_url: {
     snprintf(filename_audio_str, filename_audio_len + 1, "%s/%d-%s-audio.m4s",
              outdir, cid, title);
 
+    // 生成视频文件名
     size_t filename_video_len =
         snprintf(NULL, 0, "%s/%d-%s-video.m4s", outdir, cid, title);
     char *filename_video_str =
@@ -173,6 +179,7 @@ get_video_url: {
     snprintf(filename_video_str, filename_video_len + 1, "%s/%d-%s-video.m4s",
              outdir, cid, title);
 
+    // 生成输出文件名
     size_t filename_out_len =
         snprintf(NULL, 0, "%s/%d-%s.m4s", outdir, cid, title);
     char *filename_out_str =
@@ -181,14 +188,15 @@ get_video_url: {
              cid, title);
     char *cid_str = int_to_str(cid);
 
-    pthread_mutex_lock(&lock_gl);
+    pthread_mutex_lock(&lock_anime);
     if (create_outdir(outdir) != 0) {
-        pthread_mutex_unlock(&lock_gl);
+        pthread_mutex_unlock(&lock_anime);
         goto end;
     }
+    pthread_mutex_unlock(&lock_anime);
 
     switch (mode) {
-    case 0: {
+    case 0: { // 视频 + 音频
         api_dl_file(url_video, filename_video_str);
         api_dl_file(url_audio_j->valuestring, filename_audio_str);
         api_video_merge(filename_video_str, filename_audio_str, outdir, title,
@@ -202,11 +210,11 @@ get_video_url: {
         }
         break;
     }
-    case 1: {
+    case 1: { // 仅视频
         api_dl_file(url_video, filename_video_str);
         break;
     }
-    case 2: {
+    case 2: { // 仅音频
         api_dl_file(url_audio_j->valuestring, filename_audio_str);
         break;
     }
@@ -233,22 +241,22 @@ end:
 
 int api_anime_get_stream(int idx_c)
 {
-    int err = 0;
+    int   err = 0;
     CURL *curl = curl_easy_init();
     if (curl) {
         CURLcode err_req;
-        Buffer *buffer_stream = malloc(sizeof(Buffer));
+        Buffer  *buffer_stream = malloc(sizeof(Buffer));
         buffer_stream->buffer = NULL;
         buffer_stream->length = 0;
 
-        pthread_mutex_lock(&lock_gl);
+        pthread_mutex_lock(&lock_anime);
         int cid = anime_list->cids[idx_c];
         curl_easy_setopt(curl, CURLOPT_COOKIE, account->cookie);
-        pthread_mutex_unlock(&lock_gl);
+        pthread_mutex_unlock(&lock_anime);
 
         size_t len = snprintf(NULL, 0, "%s?cid=%d&fnval=16&fourk=1",
                               API_ANIME_GET_STREAM, cid);
-        char *url = (char *)malloc((len + 1) * sizeof(char));
+        char  *url = (char *)malloc((len + 1) * sizeof(char));
         snprintf(url, len + 1, "%s?cid=%d&fnval=16&fourk=1",
                  API_ANIME_GET_STREAM, cid);
         curl_easy_setopt(curl, CURLOPT_REFERER, _REFERER);
@@ -257,14 +265,17 @@ int api_anime_get_stream(int idx_c)
         curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, api_curl_finish);
         curl_easy_setopt(curl, CURLOPT_WRITEDATA, buffer_stream);
 
-        info("Get %s", url);
+        info("Fetching %s", url);
+
         err_req = curl_easy_perform(curl);
         if (err_req != CURLE_OK) {
-            error("Failed to get json(%d): %s", cid,
+            error("Failed to retrieve JSON for CID %d: %s", cid,
                   curl_easy_strerror(err_req));
             err = err_req;
             goto end;
         }
+
+        // 获取番剧视频流
         err = api_anime_parse_stream(buffer_stream, idx_c);
 
     end:
@@ -280,11 +291,18 @@ int api_anime_get_stream(int idx_c)
     return err;
 }
 
-void api_anime_get_video(int idx_c) { api_anime_get_stream(idx_c); }
+void api_anime_get_video(int idx_c)
+{
+    api_anime_get_stream(idx_c);
+
+    pthread_mutex_lock(&lock_anime);
+    progress_print(idx_c, anime_list->count);
+    pthread_mutex_unlock(&lock_anime);
+}
 
 int api_anime_get_cid(Buffer *buffer_info)
 {
-    int err = 0;
+    int    err = 0;
     cJSON *root = cJSON_Parse(buffer_info->buffer);
     if (root == NULL) {
         err = ERR_PARSE;
@@ -313,11 +331,13 @@ int api_anime_get_cid(Buffer *buffer_info)
     }
 
     cJSON *episode_i;
-    int index = 0;
-    int idx_c = 0; // 引索目标剧集
-    int size_l = cJSON_GetArraySize(episodes);
-    anime_list->cids = (int *)malloc((size_l + 1) * sizeof(int));
-    anime_list->title = (char **)malloc(size_l * sizeof(char *));
+    int    index = 0; // 引索获取的全部剧集
+    int    idx_c = 0; // 引索目标剧集
+    int    size_ep = cJSON_GetArraySize(episodes);
+    anime_list->cids = (int *)malloc((size_ep + 1) * sizeof(int));
+    anime_list->title = (char **)malloc(size_ep * sizeof(char *));
+
+    // 获取目标剧集的 cid & long_title
     cJSON_ArrayForEach(episode_i, episodes)
     {
         cJSON *cid = cJSON_GetObjectItemCaseSensitive(episode_i, "cid");
@@ -356,19 +376,20 @@ end:
 
 int api_anime_get_info()
 {
-    int err = 0;
+    int   err = 0;
     CURL *curl = curl_easy_init();
     if (curl) {
         CURLcode err_curl;
 
         size_t len = snprintf(NULL, 0, "%s%s", API_ANIME_GET_INFO, anime->id);
-        char *url_info = (char *)malloc((len + 1) * sizeof(char));
+        char  *url_info = (char *)malloc((len + 1) * sizeof(char));
         snprintf(url_info, len + 1, "%s%s", API_ANIME_GET_INFO, anime->id);
 
         Buffer *buffer_info = malloc(sizeof(Buffer));
         buffer_info->buffer = NULL;
         buffer_info->length = 0;
 
+        info("Fetching %s", url_info);
         curl_easy_setopt(curl, CURLOPT_COOKIE, account->cookie);
         curl_easy_setopt(curl, CURLOPT_URL, url_info);
         curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, api_curl_finish);
@@ -409,11 +430,13 @@ int api_anime_init()
     }
 
     threadpool thpool_dl = thpool_init(account->MaxThread);
-    pthread_mutex_init(&lock_gl, NULL);
+    pthread_mutex_init(&lock_anime, NULL);
+
     for (int i = 0; i < anime_list->count; i++) {
         thpool_add_work(thpool_dl, (void *)api_anime_get_video,
                         (void *)(uintptr_t)i);
     }
+
     thpool_wait(thpool_dl);
     thpool_destroy(thpool_dl);
 

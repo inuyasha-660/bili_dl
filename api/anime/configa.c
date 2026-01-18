@@ -5,7 +5,7 @@
 #include <string.h>
 
 extern struct Account *account;
-struct Anime *anime;
+struct Anime          *anime;
 
 int cfg_read_anime()
 {
@@ -20,13 +20,13 @@ int cfg_read_anime()
     cJSON *root = cJSON_Parse(account->config_str);
     if (root == NULL) {
         err = ERR_PARSE;
-        error("Failed to parse %s", account->config_path);
+        error("Failed to parse root: %s", account->config_path);
         goto end;
     }
     cJSON *Require = cJSON_GetObjectItemCaseSensitive(root, "Require");
     if (Require == NULL) {
         err = ERR_PARSE;
-        error("Failed to parse(Require) %s", account->config_path);
+        error("Failed to parse root->Require %s", account->config_path);
         goto end;
     }
 
@@ -37,23 +37,25 @@ int cfg_read_anime()
     cJSON *coding = cJSON_GetObjectItemCaseSensitive(Require, "coding");
     if (id == NULL || part == NULL || mode == NULL || qn == NULL ||
         coding == NULL) {
-        error("(Require)Found a NULL value");
+        error("(Required) Found a NULL value");
         err = ERR_PARSE;
         goto end;
     }
     if (!cJSON_IsString(id) || !cJSON_IsNumber(mode) || !cJSON_IsString(qn) ||
         !cJSON_IsString(coding)) {
-        error("(Require) Found a value with invalid type");
+        error("(Required) Found a value with invalid type");
         err = ERR_PARSE;
         goto end;
     }
 
+    // 获取选集
     int size_p = cJSON_GetArraySize(part);
     anime->part = (int *)malloc((size_p + 1) * sizeof(int));
     for (int i = 0; i < size_p; i++) {
         cJSON *part_item = cJSON_GetArrayItem(part, i);
         if (part_item == NULL || !cJSON_IsNumber(part_item)) {
-            error("(line(part): %d item: %d) Failed to get part", index + 1, i);
+            error("(line (part): %d, item: %d) Failed to get part", index + 1,
+                  i);
             err = ERR_PARSE;
             goto end;
         }
